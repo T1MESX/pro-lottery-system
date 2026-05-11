@@ -20,7 +20,7 @@
    \`\`\`bash
    git clone https://github.com/T1MESX/pro-lottery-system.git
    \`\`\`
-2. 直接使用现代浏览器（推荐 Chrome / Edge / Safari）双击打开 `index.html` 即可运行。
+2. 直接使用现代浏览器（推荐 Chrome / Edge / Safari）双击打开 `Lottery-pro.html` 即可运行。
 
 ## 💡 使用指南 (Usage)
 
