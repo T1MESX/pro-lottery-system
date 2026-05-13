@@ -50,5 +50,9 @@ Lottery Pro 是一款纯前端（SPA）、开箱即用、**极致安全且具备
 
 本程序全程在离线沙盒（Offline Sandbox）环境中运行，杜绝任何形式的网络请求与后台 API 交互，**不存在任何“暗箱操作”或“内定”接口**。任何第三方的二次修改与部署所产生的结果，与原作者无关。
 
+<img width="2593" height="1495" alt="image" src="https://github.com/user-attachments/assets/352ac620-6e2b-4044-96fd-ca8f1ee4ec62" />
+<img width="2597" height="1488" alt="image" src="https://github.com/user-attachments/assets/17314ea9-25f4-44bc-9523-aa65976ee54d" />
+
+
 ---
 *Designed with ❤️ by T1MESX.*
