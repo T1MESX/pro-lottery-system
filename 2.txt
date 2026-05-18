@@ -1,102 +1,3 @@
-            }
-        };
-
-        function initGlobalConfig() {
-            document.title = `${SYS_CONFIG.tag ? SYS_CONFIG.tag + ' ' : ''}Lottery Pro ${SYS_CONFIG.version}`;
-            document.getElementById('versionText').innerText = SYS_CONFIG.version;
-            document.getElementById('mainTitleZh').innerText = SYS_CONFIG.zh.mainTitle;
-            document.getElementById('mainTitleEn').innerText = SYS_CONFIG.en.mainTitle;
-            document.getElementById('subTitleZh').innerText = SYS_CONFIG.zh.subTitle;
-            document.getElementById('subTitleEn').innerText = SYS_CONFIG.en.subTitle;
-            document.getElementById('footerOrgZh').innerText = SYS_CONFIG.zh.footerOrg;
-            document.getElementById('footerOrgEn').innerText = SYS_CONFIG.en.footerOrg;
-        }
-
-        function t(key, params={}) {
-            let text = i18n[currentLang][key] || key;
-            for(let k in params) text = text.replace('{'+k+'}', params[k]);
-            return text;
-        }
-
-        function getCoreActivityTitle() {
-            let rawActName = document.getElementById('activityTitle').innerText.replace(/[\r\n]+/g, ' ').trim();
-            let match = rawActName.match(/——(.*?)——/);
-            let coreTitle = match ? match[1].trim() : rawActName.replace(/——/g, '').trim();
-            return coreTitle || "Lottery Activity";
-        }
-
-        // 💡 修复 2：悬浮提示集中管控引擎，实现无缝中英热切换，不再遗漏
-        function updateTooltips() {
-            const isZh = currentLang === 'zh';
-            
-            const setAttr = (id, attr, val) => {
-                const el = document.getElementById(id);
-                if (el) el.setAttribute(attr, val);
-            };
-            
-            // 主操作区按钮
-            setAttr('importBtnUI', 'title', isZh ? "导入名单 (支持 .xlsx, .xls, .csv, .txt)\n支持直接将文件拖拽至此按钮或右侧蓝色摇奖区。\n注意：Excel仅读取Sheet1的A列，请删去表头！" : "Import List (.xlsx, .csv, .txt)\nSupport Drag & Drop to this button or the blue display area.\nNote: Reads only Column A of Sheet1. Remove headers!");
-            setAttr('controlBtn', 'title', isZh ? "开始抽奖 (快捷键: 空格)" : "Start Draw (Hotkey: Space)");
-            setAttr('btnResetUI', 'title', isZh ? "清空当前所有抽奖记录并将人员重置回候选池" : "Reset all records & restore pool");
-            
-            // 顶部导航栏按钮
-            setAttr('themeBtn', 'title', isZh ? "切换暗黑/明亮模式 (快捷键: D)" : "Toggle Dark/Light Mode (Hotkey: D)");
-            setAttr('fullscreenBtn', 'title', isZh ? "切换全屏 (快捷键: F)" : "Toggle Fullscreen (Hotkey: F)");
-            setAttr('loadMusicBtn', 'title', isZh ? "导入本地音频 (.mp3, .flac)\n支持拖拽音频文件至此区" : "Load Audio files (.mp3, .flac)\nDrag & Drop supported");
-            setAttr('musicBtn', 'title', isZh ? "切换音乐播放/暂停 (快捷键: M)" : "Toggle Music (Hotkey: M)");
-            setAttr('btnExportState', 'title', isZh ? "导出当前所有数据与设置快照" : "Export all data & settings snapshot");
-            setAttr('btnImportState', 'title', isZh ? "导入备份的状态快照" : "Import state snapshot backup");
-            
-            // 预设页签按钮
-            setAttr('addPresetBtn', 'title', isZh ? "将左侧当前的设置保存为一个快捷页签" : "Save current left-side settings as a quick preset tab");
-            
-            // 💡 修复 1：底部日志/海报导出按钮，加上文件格式后缀
-            setAttr('btnGeneratePoster', 'title', isZh ? "生成近期有效记录的海报 (.png)" : "Generate poster of recent valid records (.png)");
-            setAttr('btnExportLog', 'title', isZh ? "导出全部历史与审计日志 (.csv)" : "Export all history and audit logs (.csv)");
-            
-            // 其他模块
-            setAttr('boxVar', 'title', t('varTitle'));
-            setAttr('boxOE', 'title', t('oeTitle'));
-            setAttr('boxHM', 'title', t('hmTitle'));
-            setAttr('starWrapper', 'title', t('starTip'));
-            
-            const uploadIcon = document.querySelector('.upload-icon-btn');
-            if (uploadIcon) uploadIcon.title = t('uploadTip');
-        }
-
-        function updateMusicName(name) {
-            const el = document.getElementById('musicNameText');
-            el.innerText = name;
-            el.classList.remove('marquee-text');
-            setTimeout(() => { if (el.scrollWidth > 110) { el.classList.add('marquee-text'); } }, 50);
-        }
-
-        function toggleListModeUI(active) {
-            document.getElementById('itemMin').style.display = active ? 'none' : 'flex';
-            document.getElementById('itemMax').style.display = active ? 'none' : 'flex';
-            document.getElementById('itemExclude').style.display = active ? 'none' : 'flex';
-            document.getElementById('customPoolAlert').style.display = active ? 'flex' : 'none';
-            
-            document.getElementById('meanBoard').style.display = active ? 'none' : 'flex';
-            document.getElementById('advancedBoard').style.display = active ? 'none' : 'flex';
-
-            if (active) {
-                document.getElementById('statsTitleZh').innerText = "📊 抽奖日志";
-                document.getElementById('statsTitleEn').innerText = "📊 Draw Logs";
-            } else {
-                document.getElementById('statsTitleZh').innerText = "📊 抽奖统计与日志";
-                document.getElementById('statsTitleEn').innerText = "📊 Stats & Logs";
-            }
-        }
-
-        function updateLogButtonsLanguage() {
-            document.querySelectorAll('.invalid-btn').forEach(btn => {
-                if (btn.id.startsWith('btn-cancel-')) {
-                    btn.innerText = currentLang === 'zh' ? '取消' : 'Cancel';
-                    btn.title = currentLang === 'zh' ? '取消' : 'Cancel';
-                } else if (btn.id.startsWith('btn-invalid-')) {
-                    if (btn.classList.contains('restore-btn')) {
-                        btn.innerText = currentLang === 'zh' ? '恢复' : 'Restore';
                         btn.title = currentLang === 'zh' ? '恢复' : 'Restore';
                     } else {
                         btn.innerText = currentLang === 'zh' ? '作废' : 'Invalidate';
@@ -106,10 +7,12 @@
             });
         }
 
+        // ================= 4. 语言与主题切换 =================
         function toggleLanguage() {
             currentLang = currentLang === 'zh' ? 'en' : 'zh';
             document.body.className = currentLang;
-            if(!isRunning) { document.getElementById('controlBtn').innerHTML = currentLang === 'zh' ? '<span class="lang-zh">开始抽奖</span><span class="lang-en">START DRAW</span>' : 'START DRAW'; }
+            const cBtn = document.getElementById('controlBtn');
+            if(!isRunning && cBtn) { cBtn.innerHTML = currentLang === 'zh' ? '<span class="lang-zh">开始抽奖</span><span class="lang-en">START DRAW</span>' : 'START DRAW'; }
             updateTooltips(); updateClock(); updateStatsBoard(); renderPresets();
             updateLogButtonsLanguage();
         }
@@ -117,24 +20,29 @@
         function toggleTheme() {
             const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
             document.documentElement.setAttribute('data-theme', isDark ? 'light' : 'dark');
-            document.getElementById('themeBtnText').innerText = isDark ? '🌙 影院模式' : '☀️ 明亮模式';
-            document.getElementById('themeBtnTextEn').innerText = isDark ? '🌙 Cinema Mode' : '☀️ Light Mode';
+            const tbText = document.getElementById('themeBtnText');
+            const tbTextEn = document.getElementById('themeBtnTextEn');
+            if(tbText) tbText.innerText = isDark ? '🌙 影院模式' : '☀️ 明亮模式';
+            if(tbTextEn) tbTextEn.innerText = isDark ? '🌙 Cinema Mode' : '☀️ Light Mode';
             saveState();
         }
+
         function toggleFullscreen() {
             if (!document.fullscreenElement) { document.documentElement.requestFullscreen().catch(err => { console.log(err); }); } 
             else { if (document.exitFullscreen) document.exitFullscreen(); }
         }
 
+        // ================= 5. 本地缓存与快照导入导出 =================
         function saveState() {
             if(isRunning) return;
+            const volEl = document.getElementById('volSlider');
             const state = { 
                 min: lastMin, max: lastMax, batch: lastBatch, exclude: lastExclude, 
                 noRepeat: document.getElementById('noRepeat').checked, drawn: globalDrawnHistory, 
                 drawCount: drawCount, logs: globalAuditLogs, historyHtml: document.getElementById('historyList').innerHTML, 
                 theme: document.documentElement.getAttribute('data-theme') || 'light', currentStars: currentStars, 
                 lastPrizeNote: lastPrizeNote, isCustomPool, customPoolOrigin, customPoolExcluded, presets,
-                volume: document.getElementById('volSlider').value 
+                volume: volEl ? volEl.value : 0.5 
             };
             
             let saved = false;
@@ -166,12 +74,11 @@
                 const state = JSON.parse(raw);
                 
                 if(state.volume !== undefined) {
-                    document.getElementById('volSlider').value = state.volume;
-                    audioEl.volume = state.volume;
-                    const rollingEl = document.getElementById('rollingAudio');
-                    const successEl = document.getElementById('successAudio');
-                    if(rollingEl) rollingEl.volume = state.volume;
-                    if(successEl) successEl.volume = state.volume;
+                    const volEl = document.getElementById('volSlider');
+                    if(volEl) volEl.value = state.volume;
+                    if(audioEl) audioEl.volume = state.volume;
+                    if(rollingAudio) rollingAudio.volume = state.volume;
+                    if(successAudio) successAudio.volume = state.volume;
                 }
 
                 if(state.drawn && state.drawn.length > 0 || (state.presets && state.presets.length > 0)) {
@@ -197,7 +104,12 @@
 
                         toggleListModeUI(isCustomPool);
 
-                        if(state.theme === 'dark') { document.getElementById('themeBtnText').innerText = '☀️ 明亮模式'; document.getElementById('themeBtnTextEn').innerText = '☀️ Light Mode'; }
+                        if(state.theme === 'dark') { 
+                            const tbText = document.getElementById('themeBtnText');
+                            const tbTextEn = document.getElementById('themeBtnTextEn');
+                            if(tbText) tbText.innerText = '☀️ 明亮模式'; 
+                            if(tbTextEn) tbTextEn.innerText = '☀️ Light Mode'; 
+                        }
                         updateStatsBoard(); renderPresets();
                     } else { localStorage.removeItem('pro_lottery_state'); }
                 }
@@ -218,203 +130,262 @@
             addSystemRecord(currentLang === 'zh' ? '已成功导出系统状态快照。' : 'System state snapshot exported.');
         }
 
-        document.getElementById('importStateInput').addEventListener('change', function(e) {
-            if(isRunning) return;
-            const file = e.target.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = function(evt) {
-                try {
-                    const json = JSON.parse(evt.target.result);
-                    if (json.min !== undefined && json.logs !== undefined) {
-                        localStorage.setItem('pro_lottery_state', evt.target.result);
-                        alert(currentLang === 'zh' ? '快照导入成功！系统将自动刷新以应用数据。' : 'Snapshot imported! Reloading...');
-                        window.location.reload();
-                    } else {
-                        throw new Error("Invalid format");
+        const importStateInput = document.getElementById('importStateInput');
+        if(importStateInput) {
+            importStateInput.addEventListener('change', function(e) {
+                if(isRunning) return;
+                const file = e.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = function(evt) {
+                    try {
+                        const json = JSON.parse(evt.target.result);
+                        if (json.min !== undefined && json.logs !== undefined) {
+                            localStorage.setItem('pro_lottery_state', evt.target.result);
+                            alert(currentLang === 'zh' ? '快照导入成功！系统将自动刷新以应用数据。\n⚠️ 刷新后请在弹出的对话框中选择【确定】以恢复历史记录！' : 'Snapshot imported successfully! Reloading...\n⚠️ Please click [OK] on the restore prompt after reloading!');
+                            window.location.reload();
+                        } else {
+                            throw new Error("Invalid format");
+                        }
+                    } catch(err) {
+                        alert(currentLang === 'zh' ? '导入失败：无效的快照文件格式！' : 'Import failed: Invalid snapshot format!');
                     }
-                } catch(err) {
-                    alert(currentLang === 'zh' ? '导入失败：无效的快照文件格式！' : 'Import failed: Invalid snapshot format!');
-                }
-            };
-            reader.readAsText(file);
-            e.target.value = '';
-        });
+                };
+                reader.readAsText(file);
+                e.target.value = '';
+            });
+        }
 
+        // ================= 6. 音频播放与控制引擎 =================
         const audioEl = document.getElementById('bgmAudio');
         const rollingAudio = document.getElementById('rollingAudio'); 
         const successAudio = document.getElementById('successAudio'); 
         
-        audioEl.volume = 0.5;
-        rollingAudio.volume = 0.5;
-        successAudio.volume = 0.5;
+        if(audioEl) audioEl.volume = 0.5;
+        if(rollingAudio) rollingAudio.volume = 0.5;
+        if(successAudio) successAudio.volume = 0.5;
         
-        document.getElementById('volSlider').addEventListener('input', function(e) {
-            audioEl.volume = e.target.value;
-            rollingAudio.volume = e.target.value;
-            successAudio.volume = e.target.value;
-            saveState(); 
-        });
+        let bgmFadeTimer = null;
 
-        // 💡 修复 2：将加载的文件名注入到日志中
+        const volSlider = document.getElementById('volSlider');
+        if(volSlider) {
+            volSlider.addEventListener('input', function(e) {
+                if(audioEl) audioEl.volume = e.target.value;
+                if(rollingAudio) rollingAudio.volume = e.target.value;
+                if(successAudio) successAudio.volume = e.target.value;
+                saveState(); 
+            });
+        }
+
         let musicFileUrl = '';
-        document.getElementById('localBgmInput').addEventListener('change', function(e) {
-            const files = Array.from(e.target.files).filter(f => (f.type && f.type.startsWith('audio/')) || /\.(mp3|flac)$/i.test(f.name));
-            if(files.length > 0) {
-                if(musicFileUrl) URL.revokeObjectURL(musicFileUrl);
-                musicFileUrl = URL.createObjectURL(files[0]);
-                audioEl.src = musicFileUrl;
-                updateMusicName(files[0].name);
-                addSystemRecord(currentLang === 'zh' ? `成功载入背景音乐：${files[0].name}` : `BGM loaded successfully: ${files[0].name}`);
-                if (!isMusicPlaying) toggleMusic();
-                else audioEl.play().catch(err => console.log(err));
-            } else {
-                alert(currentLang === 'zh' ? '仅支持 .mp3 或 .flac 格式！' : 'Only .mp3 or .flac supported!');
-            }
-        });
+        const localBgmInput = document.getElementById('localBgmInput');
+        if(localBgmInput) {
+            localBgmInput.addEventListener('change', function(e) {
+                const files = Array.from(e.target.files).filter(f => (f.type && f.type.startsWith('audio/')) || /\.(mp3|flac)$/i.test(f.name));
+                if(files.length > 0) {
+                    if(musicFileUrl) URL.revokeObjectURL(musicFileUrl);
+                    musicFileUrl = URL.createObjectURL(files[0]);
+                    if(audioEl) audioEl.src = musicFileUrl;
+                    updateMusicName(files[0].name);
+                    addSystemRecord(currentLang === 'zh' ? `成功载入音频：${files[0].name}` : `Audio loaded: ${files[0].name}`);
+                    if (!isMusicPlaying) toggleMusic();
+                    else if(audioEl) audioEl.play().catch(err => console.log(err));
+                } else {
+                    alert(currentLang === 'zh' ? '仅支持 .mp3 或 .flac 格式！' : 'Only .mp3 or .flac supported!');
+                }
+            });
+        }
 
         function playMusic() {
-            if(musicFileUrl) audioEl.src = musicFileUrl;
-            audioEl.play().then(() => {
-                isMusicPlaying = true; document.getElementById('musicBtn').innerHTML = `🎵 <span class="lang-zh">音乐: 开</span><span class="lang-en">BGM: ON</span>`;
-            }).catch(e => {
-                console.log("Audio play failed:", e); alert(t('noMusic')); isMusicPlaying = false;
-                document.getElementById('musicBtn').innerHTML = `🎵 <span class="lang-zh">音乐: 关</span><span class="lang-en">BGM: OFF</span>`;
-            });
+            if(musicFileUrl && audioEl) audioEl.src = musicFileUrl;
+            if(audioEl) {
+                audioEl.play().then(() => {
+                    isMusicPlaying = true; 
+                    const mBtn = document.getElementById('musicBtn');
+                    if(mBtn) mBtn.innerHTML = `🎵 <span class="lang-zh">音乐: 开</span><span class="lang-en">BGM: ON</span>`;
+                }).catch(e => {
+                    console.log("Audio play failed:", e); 
+                    alert(t('noMusic')); 
+                    isMusicPlaying = false;
+                    const mBtn = document.getElementById('musicBtn');
+                    if(mBtn) mBtn.innerHTML = `🎵 <span class="lang-zh">音乐: 关</span><span class="lang-en">BGM: OFF</span>`;
+                });
+            }
         }
 
         function toggleMusic() {
             const btn = document.getElementById('musicBtn');
-            if (isMusicPlaying) { audioEl.pause(); isMusicPlaying = false; btn.innerHTML = `🎵 <span class="lang-zh">音乐: 关</span><span class="lang-en">BGM: OFF</span>`; } 
-            else { playMusic(); }
+            if (isMusicPlaying) { 
+                if(audioEl) audioEl.pause(); 
+                if(rollingAudio) rollingAudio.pause();
+                if(successAudio) successAudio.pause();
+                isMusicPlaying = false; 
+                if(btn) btn.innerHTML = `🎵 <span class="lang-zh">音乐: 关</span><span class="lang-en">BGM: OFF</span>`; 
+            } else { 
+                playMusic(); 
+            }
             document.body.className = currentLang; 
         }
 
+        function resumeBGMWithFade() {
+            if (!isMusicPlaying || !audioEl) return;
+            audioEl.volume = 0;
+            const playPromise = audioEl.play();
+            if (playPromise !== undefined) {
+                playPromise.then(() => {
+                    const volEl = document.getElementById('volSlider');
+                    const targetVol = volEl ? (parseFloat(volEl.value) || 0.5) : 0.5;
+                    let currentVol = 0;
+                    if (bgmFadeTimer) clearInterval(bgmFadeTimer);
+                    bgmFadeTimer = setInterval(() => {
+                        currentVol += 0.05;
+                        if (currentVol >= targetVol) {
+                            audioEl.volume = targetVol;
+                            clearInterval(bgmFadeTimer);
+                        } else {
+                            audioEl.volume = currentVol;
+                        }
+                    }, 50);
+                }).catch(e => console.log("BGM Resume failed", e));
+            }
+        }
+
+        // ================= 7. 拖拽与名单解析引擎 =================
         function initDragAndDrop() {
             const prizeArea = document.getElementById('prizeInputWrap'); 
             const displayArea = document.getElementById('numberDisplay');
             const importBtn = document.getElementById('importBtnUI');
             const musicBtn = document.getElementById('loadMusicBtn'); 
 
-            prizeArea.addEventListener('dragover', e => { e.preventDefault(); prizeArea.classList.add('drag-active'); });
-            prizeArea.addEventListener('dragleave', e => { e.preventDefault(); prizeArea.classList.remove('drag-active'); });
-            prizeArea.addEventListener('drop', e => {
-                e.preventDefault(); prizeArea.classList.remove('drag-active');
-                const file = e.dataTransfer.files[0];
-                if(file && file.type.startsWith('image/')) {
-                    const dt = new DataTransfer(); dt.items.add(file);
-                    document.getElementById('prizeImage').files = dt.files;
-                    document.getElementById('prizeImage').dispatchEvent(new Event('change'));
-                } else {
-                    alert(currentLang === 'zh' ? '文件格式错误！请拖入图片文件。' : 'Invalid format! Please drop an image file.');
-                }
-            });
-
-            musicBtn.addEventListener('dragover', e => { e.preventDefault(); musicBtn.classList.add('drag-active'); });
-            musicBtn.addEventListener('dragleave', e => { e.preventDefault(); musicBtn.classList.remove('drag-active'); });
-            musicBtn.addEventListener('drop', e => {
-                e.preventDefault(); musicBtn.classList.remove('drag-active');
-                const files = Array.from(e.dataTransfer.files).filter(f => (f.type && f.type.startsWith('audio/')) || /\.(mp3|flac)$/i.test(f.name));
-                if(files.length > 0) {
-                    const dt = new DataTransfer();
-                    files.forEach(f => dt.items.add(f));
-                    document.getElementById('localBgmInput').files = dt.files;
-                    document.getElementById('localBgmInput').dispatchEvent(new Event('change'));
-                } else {
-                    alert(currentLang === 'zh' ? '格式错误！仅支持 .mp3 或 .flac' : 'Invalid format! Only .mp3 or .flac supported.');
-                }
-            });
-
-            [displayArea, importBtn].forEach(el => {
-                el.addEventListener('dragover', e => { e.preventDefault(); el.classList.add('drag-active'); });
-                el.addEventListener('dragleave', e => { e.preventDefault(); el.classList.remove('drag-active'); });
-                el.addEventListener('drop', e => {
-                    e.preventDefault(); el.classList.remove('drag-active');
+            if(prizeArea) {
+                prizeArea.addEventListener('dragover', e => { e.preventDefault(); prizeArea.classList.add('drag-active'); });
+                prizeArea.addEventListener('dragleave', e => { e.preventDefault(); prizeArea.classList.remove('drag-active'); });
+                prizeArea.addEventListener('drop', e => {
+                    e.preventDefault(); prizeArea.classList.remove('drag-active');
                     const file = e.dataTransfer.files[0];
-                    if(file) {
-                        const validExts = ['.xlsx', '.xls', '.csv', '.txt'];
-                        const isValid = validExts.some(ext => file.name.toLowerCase().endsWith(ext));
-                        if(isValid) {
-                            const dt = new DataTransfer(); dt.items.add(file);
-                            document.getElementById('importListInput').files = dt.files;
-                            document.getElementById('importListInput').dispatchEvent(new Event('change'));
-                        } else {
-                            alert(currentLang === 'zh' ? '文件格式错误！仅支持 .xlsx, .xls, .csv, .txt' : 'Invalid format! Only .xlsx, .xls, .csv, .txt are supported.');
-                        }
+                    if(file && file.type.startsWith('image/')) {
+                        const dt = new DataTransfer(); dt.items.add(file);
+                        const pImg = document.getElementById('prizeImage');
+                        if(pImg) { pImg.files = dt.files; pImg.dispatchEvent(new Event('change')); }
+                    } else {
+                        alert(currentLang === 'zh' ? '文件格式错误！请拖入图片文件。' : 'Invalid format! Please drop an image file.');
                     }
                 });
+            }
+
+            if(musicBtn) {
+                musicBtn.addEventListener('dragover', e => { e.preventDefault(); musicBtn.classList.add('drag-active'); });
+                musicBtn.addEventListener('dragleave', e => { e.preventDefault(); musicBtn.classList.remove('drag-active'); });
+                musicBtn.addEventListener('drop', e => {
+                    e.preventDefault(); musicBtn.classList.remove('drag-active');
+                    const files = Array.from(e.dataTransfer.files).filter(f => (f.type && f.type.startsWith('audio/')) || /\.(mp3|flac)$/i.test(f.name));
+                    if(files.length > 0) {
+                        const dt = new DataTransfer();
+                        files.forEach(f => dt.items.add(f));
+                        const lBgm = document.getElementById('localBgmInput');
+                        if(lBgm) { lBgm.files = dt.files; lBgm.dispatchEvent(new Event('change')); }
+                    } else {
+                        alert(currentLang === 'zh' ? '格式错误！仅支持 .mp3 或 .flac' : 'Invalid format! Only .mp3 or .flac supported.');
+                    }
+                });
+            }
+
+            [displayArea, importBtn].forEach(el => {
+                if(el) {
+                    el.addEventListener('dragover', e => { e.preventDefault(); el.classList.add('drag-active'); });
+                    el.addEventListener('dragleave', e => { e.preventDefault(); el.classList.remove('drag-active'); });
+                    el.addEventListener('drop', e => {
+                        e.preventDefault(); el.classList.remove('drag-active');
+                        const file = e.dataTransfer.files[0];
+                        if(file) {
+                            const validExts = ['.xlsx', '.xls', '.csv', '.txt'];
+                            const isValid = validExts.some(ext => file.name.toLowerCase().endsWith(ext));
+                            if(isValid) {
+                                const dt = new DataTransfer(); dt.items.add(file);
+                                const iList = document.getElementById('importListInput');
+                                if(iList) { iList.files = dt.files; iList.dispatchEvent(new Event('change')); }
+                            } else {
+                                alert(currentLang === 'zh' ? '文件格式错误！仅支持 .xlsx, .xls, .csv, .txt' : 'Invalid format! Only .xlsx, .xls, .csv, .txt are supported.');
+                            }
+                        }
+                    });
+                }
             });
         }
 
-        document.getElementById('importListInput').addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            
-            reader.onload = function(evt) {
-                try {
-                    const data = evt.target.result;
-                    let parsedList = [];
-                    
-                    if (file.name.endsWith('.xlsx') || file.name.endsWith('.xls')) {
-                        const workbook = XLSX.read(data, {type: 'binary'});
-                        const firstSheetName = workbook.SheetNames[0];
-                        const worksheet = workbook.Sheets[firstSheetName];
-                        const json = XLSX.utils.sheet_to_json(worksheet, {header: 1});
-                        for(let i=0; i<json.length; i++) {
-                            if(json[i] && json[i][0] !== undefined && json[i][0] !== null && String(json[i][0]).trim() !== '') {
-                                parsedList.push(String(json[i][0]).trim());
+        const importListInput = document.getElementById('importListInput');
+        if (importListInput) {
+            importListInput.addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                
+                reader.onload = function(evt) {
+                    try {
+                        const data = evt.target.result;
+                        let parsedList = [];
+                        
+                        if (file.name.endsWith('.xlsx') || file.name.endsWith('.xls')) {
+                            const workbook = XLSX.read(data, {type: 'binary'});
+                            const firstSheetName = workbook.SheetNames[0];
+                            const worksheet = workbook.Sheets[firstSheetName];
+                            const json = XLSX.utils.sheet_to_json(worksheet, {header: 1});
+                            for(let i=0; i<json.length; i++) {
+                                if(json[i] && json[i][0] !== undefined && json[i][0] !== null && String(json[i][0]).trim() !== '') {
+                                    parsedList.push(String(json[i][0]).trim());
+                                }
                             }
+                        } else {
+                            parsedList = data.split(/[\r\n,，\s]+/).map(s => s.trim()).filter(s => s !== '');
                         }
-                    } else {
-                        parsedList = data.split(/[\r\n,，\s]+/).map(s => s.trim()).filter(s => s !== '');
+
+                        if (parsedList.length === 0) {
+                            alert(currentLang === 'zh' ? "未发现有效数据，请检查文件内容！" : "No valid data found, please check the file!");
+                            return;
+                        }
+
+                        let seen = new Set();
+                        let dupes = new Set();
+                        parsedList.forEach(item => {
+                            if (seen.has(item)) dupes.add(item);
+                            else seen.add(item);
+                        });
+                        
+                        customPoolOrigin = Array.from(seen);
+                        isCustomPool = true;
+                        
+                        if (dupes.size > 0) {
+                            let dupeArr = Array.from(dupes);
+                            let msg = currentLang === 'zh' ? 
+                                `⚠️ 提示：发现并已自动去重 ${dupeArr.length} 种重复项。\n\n[重复项]:\n${dupeArr.slice(0,5).join(', ')}${dupeArr.length > 5 ? ' ...' : ''}` :
+                                `⚠️ Note: Automatically removed ${dupeArr.length} duplicate types.\n\n[Duplicates]:\n${dupeArr.slice(0,5).join(', ')}${dupeArr.length > 5 ? ' ...' : ''}`;
+                            alert(msg);
+                        }
+
+                        toggleListModeUI(true);
+                        globalDrawnHistory = [];
+                        drawCount = 0;
+                        const numDisp = document.getElementById('numberDisplay');
+                        if (numDisp) numDisp.innerHTML = "?";
+                        updateStatsBoard();
+
+                        addSystemRecord(t('logListImport', {n: customPoolOrigin.length}));
+                        saveState();
+
+                    } catch (error) {
+                        console.error(error);
+                        alert(currentLang === 'zh' ? "解析失败，请检查文件格式。建议使用单列无空行的 Excel 或 TXT 文件。" : "Parsing failed. Please ensure a valid single-column Excel or TXT.");
                     }
+                };
 
-                    if (parsedList.length === 0) {
-                        alert(currentLang === 'zh' ? "未发现有效数据，请检查文件内容！" : "No valid data found, please check the file!");
-                        return;
-                    }
-
-                    let seen = new Set();
-                    let dupes = new Set();
-                    parsedList.forEach(item => {
-                        if (seen.has(item)) dupes.add(item);
-                        else seen.add(item);
-                    });
-                    
-                    customPoolOrigin = Array.from(seen);
-                    isCustomPool = true;
-                    
-                    if (dupes.size > 0) {
-                        let dupeArr = Array.from(dupes);
-                        let msg = currentLang === 'zh' ? 
-                            `⚠️ 提示：发现并已自动去重 ${dupeArr.length} 种重复项。\n\n[重复项]:\n${dupeArr.slice(0,5).join(', ')}${dupeArr.length > 5 ? ' ...' : ''}` :
-                            `⚠️ Note: Automatically removed ${dupeArr.length} duplicate types.\n\n[Duplicates]:\n${dupeArr.slice(0,5).join(', ')}${dupeArr.length > 5 ? ' ...' : ''}`;
-                        alert(msg);
-                    }
-
-                    toggleListModeUI(true);
-                    globalDrawnHistory = [];
-                    drawCount = 0;
-                    document.getElementById('numberDisplay').innerHTML = "?";
-                    updateStatsBoard();
-
-                    addSystemRecord(t('logListImport', {n: customPoolOrigin.length}));
-                    saveState();
-
-                } catch (error) {
-                    console.error(error);
-                    alert(currentLang === 'zh' ? "解析失败，请检查文件格式。建议使用单列无空行的 Excel 或 TXT 文件。" : "Parsing failed. Please ensure a valid single-column Excel or TXT.");
+                if (file.name.endsWith('.xlsx') || file.name.endsWith('.xls')) {
+                    reader.readAsBinaryString(file);
+                } else {
+                    reader.readAsText(file);
                 }
-            };
-
-            if (file.name.endsWith('.xlsx') || file.name.endsWith('.xls')) {
-                reader.readAsBinaryString(file);
-            } else {
-                reader.readAsText(file);
-            }
-            e.target.value = ''; 
-        });
+                e.target.value = ''; 
+            });
+        }
 
         function clearCustomPool() {
             if(isRunning) return;
@@ -428,82 +399,101 @@
             saveState();
         }
 
-        document.getElementById('prizeImage').addEventListener('change', function(e) {
-            const file = e.target.files[0]; 
-            const box = document.getElementById('imgPreviewBox'); 
-            const imgPreview = document.getElementById('previewImg');
-            
-            if (file) { 
-                if (file.type === 'image/gif' && file.size <= 1024 * 1024) {
-                    const reader = new FileReader();
-                    reader.onload = function(evt) {
-                        currentImageBase64 = evt.target.result;
-                        imgPreview.src = currentImageBase64;
-                        box.style.display = 'block';
-                        checkAndSaveActivePreset(); 
-                    };
-                    reader.readAsDataURL(file);
-                } else {
-                    const reader = new FileReader(); 
-                    reader.onload = function(evt) { 
-                        const img = new Image();
-                        img.onload = function() {
-                            const MAX_WIDTH = 1200; 
-                            const MAX_HEIGHT = 1200;
-                            let width = img.width;
-                            let height = img.height;
-
-                            if (width > height) {
-                                if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; }
-                            } else {
-                                if (height > MAX_HEIGHT) { width *= MAX_HEIGHT / height; height = MAX_HEIGHT; }
-                            }
-
-                            const canvas = document.createElement('canvas');
-                            const ctx = canvas.getContext('2d');
-                            canvas.width = width;
-                            canvas.height = height;
-                            ctx.drawImage(img, 0, 0, width, height);
-
-                            currentImageBase64 = canvas.toDataURL('image/webp', 0.92);
-                            imgPreview.src = currentImageBase64; 
-                            box.style.display = 'block'; 
+        // ================= 8. 图片上传与压缩处理 =================
+        const prizeImageInput = document.getElementById('prizeImage');
+        if (prizeImageInput) {
+            prizeImageInput.addEventListener('change', function(e) {
+                const file = e.target.files[0]; 
+                const box = document.getElementById('imgPreviewBox'); 
+                const imgPreview = document.getElementById('previewImg');
+                
+                if (file) { 
+                    if (file.type === 'image/gif' && file.size <= 1024 * 1024) {
+                        const reader = new FileReader();
+                        reader.onload = function(evt) {
+                            currentImageBase64 = evt.target.result;
+                            if(imgPreview) imgPreview.src = currentImageBase64;
+                            if(box) box.style.display = 'block';
                             checkAndSaveActivePreset(); 
                         };
-                        img.src = evt.target.result; 
-                    }; 
-                    reader.readAsDataURL(file); 
+                        reader.readAsDataURL(file);
+                    } else {
+                        const reader = new FileReader(); 
+                        reader.onload = function(evt) { 
+                            const img = new Image();
+                            img.onload = function() {
+                                const MAX_WIDTH = 1200; 
+                                const MAX_HEIGHT = 1200;
+                                let width = img.width;
+                                let height = img.height;
+
+                                if (width > height) {
+                                    if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; }
+                                } else {
+                                    if (height > MAX_HEIGHT) { width *= MAX_HEIGHT / height; height = MAX_HEIGHT; }
+                                }
+
+                                const canvas = document.createElement('canvas');
+                                const ctx = canvas.getContext('2d');
+                                canvas.width = width;
+                                canvas.height = height;
+                                ctx.drawImage(img, 0, 0, width, height);
+
+                                currentImageBase64 = canvas.toDataURL('image/webp', 0.92);
+                                if(imgPreview) imgPreview.src = currentImageBase64; 
+                                if(box) box.style.display = 'block'; 
+                                checkAndSaveActivePreset(); 
+                            };
+                            img.src = evt.target.result; 
+                        }; 
+                        reader.readAsDataURL(file); 
+                    }
+                } 
+                else { 
+                    clearImage(); 
                 }
-            } 
-            else { 
-                clearImage(); 
-            }
-        });
+            });
+        }
 
         function clearImage() { 
             currentImageBase64 = null; 
-            document.getElementById('previewImg').src = ''; 
-            document.getElementById('imgPreviewBox').style.display = 'none'; 
-            document.getElementById('prizeImage').value = ''; 
+            const imgPreview = document.getElementById('previewImg');
+            const box = document.getElementById('imgPreviewBox');
+            const prizeImg = document.getElementById('prizeImage');
+            if(imgPreview) imgPreview.src = ''; 
+            if(box) box.style.display = 'none'; 
+            if(prizeImg) prizeImg.value = ''; 
             checkAndSaveActivePreset(); 
         }
         
-        document.getElementById('previewImg').addEventListener('click', function() {
-            if (this.src) {
-                document.getElementById('largePreviewImg').src = this.src;
-                const note = document.getElementById('prizeNote').value.trim();
-                let infoHtml = '';
-                if (note || currentStars > 0) {
-                    const sStr = (currentStars > 0) ? '<span style="color:#f59e0b; text-shadow: 0 2px 4px rgba(245,158,11,0.3);">★</span>'.repeat(currentStars) + '<span style="color:var(--text-light);">★</span>'.repeat(5-currentStars) : '';
-                    const nStr = note ? `🎁 ${note}` : '';
-                    infoHtml = `<div class="modal-prize-box" style="margin-bottom:0; margin-top:20px;"><div class="modal-prize-highlight-text">${nStr}&nbsp;&nbsp;<span style="font-size:1.1em;">${sStr}</span></div></div>`;
+        const pvImg = document.getElementById('previewImg');
+        if (pvImg) {
+            pvImg.addEventListener('click', function() {
+                if (this.src) {
+                    const lpi = document.getElementById('largePreviewImg');
+                    if(lpi) lpi.src = this.src;
+                    
+                    const noteEl = document.getElementById('prizeNote');
+                    const note = noteEl ? noteEl.value.trim() : '';
+                    let infoHtml = '';
+                    if (note || currentStars > 0) {
+                        const sStr = (currentStars > 0) ? '<span style="color:#f59e0b; text-shadow: 0 2px 4px rgba(245,158,11,0.3);">★</span>'.repeat(currentStars) + '<span style="color:var(--text-light);">★</span>'.repeat(5-currentStars) : '';
+                        const nStr = note ? `🎁 ${note}` : '';
+                        infoHtml = `<div class="modal-prize-box" style="margin-bottom:0; margin-top:20px;"><div class="modal-prize-highlight-text">${nStr}&nbsp;&nbsp;<span style="font-size:1.1em;">${sStr}</span></div></div>`;
+                    }
+                    const modalInfo = document.getElementById('imageModalPrizeInfo');
+                    if(modalInfo) modalInfo.innerHTML = infoHtml;
+                    const imgMod = document.getElementById('imageModal');
+                    if(imgMod) imgMod.style.display = 'flex';
+                    document.activeElement.blur();
                 }
-                document.getElementById('imageModalPrizeInfo').innerHTML = infoHtml;
-                document.getElementById('imageModal').style.display = 'flex';
-                document.activeElement.blur();
-            }
-        });
-        function closeImageModal() { document.getElementById('imageModal').style.display = 'none'; }
+            });
+        }
+
+        function closeImageModal() { 
+            const m = document.getElementById('imageModal');
+            if(m) m.style.display = 'none'; 
+        }
 
         async function generateThumbnail(sourceB64, maxW, maxH, q) {
             if (!sourceB64) return null;
@@ -528,13 +518,16 @@
             return generateThumbnail(sourceB64, SYS_CONFIG.imageCompression.maxWidth, SYS_CONFIG.imageCompression.maxHeight, SYS_CONFIG.imageCompression.quality);
         }
 
+        // ================= 9. 预设奖池逻辑 =================
         async function checkAndSaveActivePreset() {
             if (!activePresetId || isRunning) return;
             const p = presets.find(x => x.id === activePresetId);
             if (!p || p.drawn) return;
 
-            const currentNote = document.getElementById('prizeNote').value.trim();
-            const currentBatch = document.getElementById('batchNum').value;
+            const noteEl = document.getElementById('prizeNote');
+            const batchEl = document.getElementById('batchNum');
+            const currentNote = noteEl ? noteEl.value.trim() : '';
+            const currentBatch = batchEl ? batchEl.value : 1;
 
             let isModified = false;
             if (currentNote !== p.note) { p.note = currentNote; isModified = true; }
@@ -556,9 +549,11 @@
 
         function rollbackToPrePresetState() {
             if (prePresetState) {
-                document.getElementById('prizeNote').value = prePresetState.note;
+                const pNote = document.getElementById('prizeNote');
+                const bNum = document.getElementById('batchNum');
+                if(pNote) pNote.value = prePresetState.note;
                 lastPrizeNote = prePresetState.note;
-                document.getElementById('batchNum').value = prePresetState.batch;
+                if(bNum) bNum.value = prePresetState.batch;
                 lastBatch = prePresetState.batch;
                 currentStars = prePresetState.stars;
                 renderStars(currentStars);
@@ -567,13 +562,14 @@
                 const box = document.getElementById('imgPreviewBox'); 
                 const imgPreview = document.getElementById('previewImg');
                 if (currentImageBase64) {
-                    imgPreview.src = currentImageBase64;
-                    box.style.display = 'block';
+                    if(imgPreview) imgPreview.src = currentImageBase64;
+                    if(box) box.style.display = 'block';
                 } else {
                     currentImageBase64 = null;
-                    imgPreview.src = '';
-                    box.style.display = 'none';
-                    document.getElementById('prizeImage').value = '';
+                    if(imgPreview) imgPreview.src = '';
+                    if(box) box.style.display = 'none';
+                    const pi = document.getElementById('prizeImage');
+                    if(pi) pi.value = '';
                 }
             }
         }
@@ -593,9 +589,11 @@
             }
 
             if (!activePresetId) {
+                const pNote = document.getElementById('prizeNote');
+                const bNum = document.getElementById('batchNum');
                 prePresetState = {
-                    note: document.getElementById('prizeNote').value.trim(),
-                    batch: document.getElementById('batchNum').value,
+                    note: pNote ? pNote.value.trim() : '',
+                    batch: bNum ? bNum.value : 1,
                     stars: currentStars,
                     image: currentImageBase64
                 };
@@ -635,8 +633,10 @@
             if(isRunning) return;
             if(presets.length >= 20) { alert(t('alertPresetMax')); return; }
             
-            const note = document.getElementById('prizeNote').value.trim();
-            const batch = document.getElementById('batchNum').value;
+            const noteEl = document.getElementById('prizeNote');
+            const batchEl = document.getElementById('batchNum');
+            const note = noteEl ? noteEl.value.trim() : '';
+            const batch = batchEl ? batchEl.value : 1;
             const pName = note || (currentLang === 'zh' ? '未命名奖项' : 'Unnamed Prize');
             
             let compressedB64 = await forceLowResCompress(currentImageBase64);
@@ -654,16 +654,20 @@
             addSettingRecord(t('logPresetAdd', {name: pName}));
             
             activePresetId = null;
-            document.getElementById('prizeNote').value = '';
+            if(noteEl) noteEl.value = '';
             lastPrizeNote = '';
-            document.getElementById('batchNum').value = 1;
+            if(batchEl) batchEl.value = 1;
             lastBatch = 1;
             currentStars = 0;
             renderStars(0);
             currentImageBase64 = null;
-            document.getElementById('previewImg').src = '';
-            document.getElementById('imgPreviewBox').style.display = 'none';
-            document.getElementById('prizeImage').value = '';
+            
+            const pvImg = document.getElementById('previewImg');
+            const bx = document.getElementById('imgPreviewBox');
+            const pi = document.getElementById('prizeImage');
+            if(pvImg) pvImg.src = '';
+            if(bx) bx.style.display = 'none';
+            if(pi) pi.value = '';
             prePresetState = { note: '', batch: 1, stars: 0, image: null };
 
             renderPresets();
@@ -672,9 +676,12 @@
 
         function renderPresets() {
             const list = document.getElementById('presetList');
+            if(!list) return;
             
-            document.getElementById('presetCounterZh').innerText = `(${presets.length}/20)`;
-            document.getElementById('presetCounterEn').innerText = `(${presets.length}/20)`;
+            const zhCnt = document.getElementById('presetCounterZh');
+            const enCnt = document.getElementById('presetCounterEn');
+            if(zhCnt) zhCnt.innerText = `(${presets.length}/20)`;
+            if(enCnt) enCnt.innerText = `(${presets.length}/20)`;
 
             if (presets.length === 0) {
                 list.innerHTML = `<div style="text-align:center; color:var(--text-light); padding:20px; font-size:13px;" id="presetEmptyHint"><span class="lang-zh">暂无预设。在左侧填好奖品后点击上方添加。</span><span class="lang-en">No presets. Fill prize info and click add.</span></div>`;
@@ -702,8 +709,8 @@
                     ${imgTag}
                     <div class="preset-controls">
                         <div class="preset-move-group">
-                            ${index > 0 ? `<button class="preset-move-btn" onclick="movePreset(event, '${p.id}', -1)" title="${currentLang==='zh'?'上移':'Move Up'}"><svg viewBox="0 0 24 24"><polyline points="18 15 12 9 6 15"></polyline></svg></button>` : `<div style="width:18px;height:18px;"></div>`}
-                            ${index < presets.length - 1 ? `<button class="preset-move-btn" onclick="movePreset(event, '${p.id}', 1)" title="${currentLang==='zh'?'下移':'Move Down'}"><svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"></polyline></svg></button>` : `<div style="width:18px;height:18px;"></div>`}
+                            ${index > 0 ? `<button class="preset-move-btn" onclick="movePreset(event, '${p.id}', -1)" title="${currentLang==='zh'?'上移':'Move Up'}"><svg viewBox="0 0 24 24"><polyline points="18 15 12 9 6 15"></polyline></svg></button>` : `<div class="preset-move-placeholder"></div>`}
+                            ${index < presets.length - 1 ? `<button class="preset-move-btn" onclick="movePreset(event, '${p.id}', 1)" title="${currentLang==='zh'?'下移':'Move Down'}"><svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"></polyline></svg></button>` : `<div class="preset-move-placeholder"></div>`}
                         </div>
                     </div>
                 `;
@@ -715,9 +722,11 @@
             const p = presets.find(x => x.id === id);
             if(!p || p.drawn) return;
 
-            document.getElementById('prizeNote').value = p.note;
+            const pNote = document.getElementById('prizeNote');
+            const bNum = document.getElementById('batchNum');
+            if(pNote) pNote.value = p.note;
             lastPrizeNote = p.note;
-            document.getElementById('batchNum').value = p.batch;
+            if(bNum) bNum.value = p.batch;
             lastBatch = p.batch;
             currentStars = p.stars;
             renderStars(currentStars);
@@ -726,13 +735,14 @@
             const box = document.getElementById('imgPreviewBox'); 
             const imgPreview = document.getElementById('previewImg');
             if(currentImageBase64) {
-                imgPreview.src = currentImageBase64;
-                box.style.display = 'block';
+                if(imgPreview) imgPreview.src = currentImageBase64;
+                if(box) box.style.display = 'block';
             } else {
                 currentImageBase64 = null; 
-                imgPreview.src = ''; 
-                box.style.display = 'none'; 
-                document.getElementById('prizeImage').value = ''; 
+                if(imgPreview) imgPreview.src = ''; 
+                if(box) box.style.display = 'none'; 
+                const pImg = document.getElementById('prizeImage');
+                if(pImg) pImg.value = ''; 
             }
 
             activePresetId = id;
@@ -742,10 +752,12 @@
             addYellowRecord(t('logPrize', {val: pName}));
         }
 
+        // ================= 10. 输入框格式校验与状态绑定 =================
         function validatePositiveInt(val) { return /^\d+$/.test(val) && Number(val) > 0; }
         
         function setupNumberInput(id, getPrevValue, setPrevValue, isRange) {
             const el = document.getElementById(id);
+            if(!el) return;
             el.addEventListener('blur', function() {
                 if (this.validity && this.validity.badInput) {
                     alert(t('alertPositive')); 
@@ -756,8 +768,10 @@
                 if (!validatePositiveInt(val) || val === "") { alert(t('alertPositive')); this.value = getPrevValue(); return; }
                 
                 if (isRange) {
-                    let testMin = id === 'minNum' ? Number(val) : Number(document.getElementById('minNum').value);
-                    let testMax = id === 'maxNum' ? Number(val) : Number(document.getElementById('maxNum').value);
+                    const minEl = document.getElementById('minNum');
+                    const maxEl = document.getElementById('maxNum');
+                    let testMin = id === 'minNum' ? Number(val) : Number(minEl ? minEl.value : 1);
+                    let testMax = id === 'maxNum' ? Number(val) : Number(maxEl ? maxEl.value : 100);
                     if (testMax - testMin > 100000) {
                         alert(currentLang === 'zh' ? '⚠️ 性能保护：号码区间不能超过 10 万！' : '⚠️ Memory limit: Range cannot exceed 100,000!');
                         this.value = getPrevValue(); return;
@@ -796,5 +810,91 @@
             });
             el.addEventListener('keydown', function(e) { if (e.key === 'Enter') { e.preventDefault(); this.blur(); } });
         }
+        
         setupNumberInput('minNum', () => lastMin, (v) => lastMin = v, true);
         setupNumberInput('maxNum', () => lastMax, (v) => lastMax = v, true);
+        setupNumberInput('batchNum', () => lastBatch, (v) => lastBatch = v, false);
+
+        const excludeEl = document.getElementById('excludeNum');
+        if(excludeEl) {
+            excludeEl.addEventListener('blur', function() {
+                let val = this.value.replace(/\n/g, ' ').trim(); 
+                if (!val) { 
+                    this.value = ''; 
+                    if (lastExclude !== '') { 
+                        lastExclude = ''; updateStatsBoard(); const stats=getPoolStats(); 
+                        addSettingRecord(t('logExcludeClear', {rem: stats.remaining, tot: stats.total})); saveState();
+                    } 
+                    return; 
+                }
+                
+                const parts = val.split(/[,，]/); let valid = []; let err = false; let rngErr = false;
+                for (let part of parts) {
+                    const trim = part.trim(); if (trim === '') continue; 
+                    if (trim.includes('-') && !isCustomPool) { 
+                        const r = trim.split('-'); if (r.length !== 2) { err = true; break; }
+                        if (!validatePositiveInt(r[0].trim()) || !validatePositiveInt(r[1].trim())) { err = true; break; }
+                        const a = Number(r[0].trim()); const b = Number(r[1].trim());
+                        if (a > b) { rngErr = true; break; }
+                        for (let i = a; i <= b; i++) valid.push(i);
+                    } else {
+                        if(!isCustomPool && !validatePositiveInt(trim)) { err = true; break; }
+                        valid.push(isCustomPool ? trim : Number(trim));
+                    }
+                }
+                if (rngErr) { alert(t('alertRange')); this.value = lastExclude; return; }
+                if (err) { alert(t('alertFormat')); this.value = lastExclude; return; }
+                
+                if(isCustomPool) { valid = [...new Set(valid)]; } 
+                else { valid = [...new Set(valid)].sort((a, b) => a - b); }
+                
+                const newVal = valid.join(', '); this.value = newVal;
+                if (lastExclude !== newVal) { lastExclude = newVal; updateStatsBoard(); const stats = getPoolStats(); addSettingRecord(t('logExclude', {val: newVal, rem: stats.remaining, tot: stats.total})); saveState();}
+            });
+            excludeEl.addEventListener('keydown', function(e) { if (e.key === 'Enter') { e.preventDefault(); this.blur(); } });
+        }
+
+        const noRepeatEl = document.getElementById('noRepeat');
+        if(noRepeatEl) {
+            noRepeatEl.addEventListener('change', (e) => { 
+                updateStatsBoard(); const stats = getPoolStats(); addSettingRecord(t('logNoRepeat', {status: e.target.checked ? t('on') : t('off'), rem: stats.remaining, tot: stats.total})); saveState(); 
+            });
+        }
+        
+        const prizeNoteEl = document.getElementById('prizeNote');
+        if(prizeNoteEl) {
+            prizeNoteEl.addEventListener('blur', function(e) { 
+                const val = e.target.value.trim(); 
+                if (val !== lastPrizeNote) {
+                    lastPrizeNote = val;
+                    saveState();
+                    checkAndSaveActivePreset(); 
+                }
+            });
+            prizeNoteEl.addEventListener('keydown', function(e) { if (e.key === 'Enter') { e.preventDefault(); this.blur(); } });
+        }
+
+        // ================= 11. 星级打分控件 =================
+        const starElements = document.querySelectorAll('.star-rating .star');
+        function renderStars(count) { starElements.forEach((s, i) => { s.textContent = '★'; s.style.color = i < count ? '#f59e0b' : 'var(--border-color)'; s.style.textShadow = i < count ? '0 2px 5px rgba(245,158,11,0.3)' : 'none'; }); }
+        starElements.forEach(star => {
+            star.addEventListener('mouseover', function() { renderStars(parseInt(this.getAttribute('data-value'))); });
+            star.addEventListener('mouseout', function() { renderStars(currentStars); });
+            star.addEventListener('click', function(e) {
+                const val = parseInt(this.getAttribute('data-value'));
+                if (currentStars !== val) { currentStars = val; createStarParticles(e.clientX, e.clientY); } else { currentStars = 0; }
+                renderStars(currentStars); 
+                saveState();
+                checkAndSaveActivePreset(); 
+            });
+        });
+
+        // ================= 12. 快捷键与动画粒子特效 =================
+        function updateClock() {
+            const now = new Date(); const y = now.getFullYear(); const m = String(now.getMonth()+1).padStart(2,'0'); const d = String(now.getDate()).padStart(2,'0');
+            const hh = String(now.getHours()).padStart(2,'0'); const mm = String(now.getMinutes()).padStart(2,'0'); const ss = String(now.getSeconds()).padStart(2,'0');
+            const clk = document.getElementById('sysClock');
+            if(clk) clk.textContent = `${y}-${m}-${d} ${hh}:${mm}:${ss}`; 
+            return `${y}-${m}-${d} ${hh}:${mm}:${ss}`; 
+        }
+        setInterval(updateClock, 1000); 
