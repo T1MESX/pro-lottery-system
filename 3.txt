@@ -742,7 +742,7 @@
                 for(let i=0; i<r.leftLines.length; i++) { ctx.fillText(r.leftLines[i], padding * 2 + 40, textY); textY += 45; }
                 if(r.hasStars) { ctx.fillText(r.stars, padding * 2 + 40, textY); }
 
-                ctx.fillStyle = '#f87171'; ctx.font = 'bold 48px Consolas'; ctx.textAlign = 'right'; 
+                ctx.fillStyle = '#d4af37'; ctx.font = 'bold 48px Consolas'; ctx.textAlign = 'right'; 
                 let lineStartY = itemDrawY + (r.itemHeight - r.renderLines.length * 60) / 2 + 45;
                 let rightBaseX = 1170 - padding * 2 - 40 - (r.image ? 160 : 0);
                 for (let i = 0; i < r.renderLines.length; i++) { ctx.fillText(r.renderLines[i], rightBaseX, lineStartY + i * 60); }
