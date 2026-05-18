@@ -1,4 +1,4 @@
-,zneg<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-CN" data-theme="light">
 <head>
     <meta charset="UTF-8">
@@ -349,7 +349,7 @@
     <div class="top-controls">
         <a class="top-btn" href="https://github.com/T1MESX/Lottery-Pro" target="_blank" title="GitHub Repository">
             <svg height="18" viewBox="0 0 16 16" width="18" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"></path></svg>
-            <span id="versionText">v3.1.3</span>
+            <span id="versionText">v3.2.3</span>
         </a>
         <span>|</span>
         <span class="top-btn" id="btnExportState" onclick="exportState()">
@@ -587,7 +587,7 @@
                 3. txt/csv delimiters: newlines, spaces, commas.
             </span>
         </div>
-        <div class="instruction-section" style="margin-top: 0px;">
+        <div class="instruction-section" style="margin-top: 15px;">
             <b><span class="lang-zh">🎵 音乐与音效说明：</span><span class="lang-en">🎵 Audio Instructions:</span></b><br>
             <span class="lang-zh">
                 1. 顶部导航栏支持点击或直接拖拽 <b>.mp3 / .flac</b> 加载背景音乐与滚轮音效。<br>
@@ -640,7 +640,7 @@
     <div class="modal" id="imageModal">
         <div class="modal-content">
             <h2 style="color: var(--display-text); margin: 0 0 20px 0; font-size: 28px;">
-                <span class="lang-zh">🖼️ 奖品大图预览</span><span class="lang-en">🖼️ Image Preview</span>
+                <span class="lang-zh">🖼️ 奖品预览</span><span class="lang-en">🖼️ Image Preview</span>
             </h2>
             <img id="largePreviewImg" src="">
             <div id="imageModalPrizeInfo"></div>
@@ -651,28 +651,28 @@
     <script>
         // ================= 0. 全局统一配置 =================
         const SYS_CONFIG = {
-            version: "v3.2.0",
+            version: "v3.2.3",
             tag: "", 
             
             imageCompression: {
-                maxWidth: 700,   
-                maxHeight: 700,  
-                quality: 0.90    
+                maxWidth: 800,   
+                maxHeight: 800,  
+                quality: 0.95    
             },
 
             zh: {
-                mainTitle: "🍿 专业级抽奖终端 v3 🍿",
-                subTitle: "—— [在此替换您的名称] ——",
+                mainTitle: "🍿 抽奖终端 Pro v3 🍿",
+                subTitle: "—— [在此替换您的活动名称] ——",
                 footerOrg: "[此处可替换主办方名称]"
             },
             en: {
-                mainTitle: "🍿 Lottery Pro v3 Terminal 🍿",
+                mainTitle: "🍿 Lottery Pro v3 🍿",
                 subTitle: "—— [Replace With Your Event Name] ——",
                 footerOrg: "[Your Organization]"
             }
         };
 
-        // ================= 1. 全局状态 =================
+        // ================= 1. 全局状态变量 =================
         let timer = null;          
         let isRunning = false;     
         let drawCount = 0;         
@@ -697,13 +697,13 @@
         let activePresetId = null;
         let prePresetState = null;
 
-        let lastMin = document.getElementById('minNum').value;
-        let lastMax = document.getElementById('maxNum').value;
-        let lastBatch = document.getElementById('batchNum').value;
-        let lastExclude = document.getElementById('excludeNum').value.trim();
+        let lastMin = 1;
+        let lastMax = 100;
+        let lastBatch = 1;
+        let lastExclude = '';
         let lastPrizeNote = '';
 
-        // ================= 2. 多语言系统 =================
+        // ================= 2. 多语言系统 (i18n) =================
         const i18n = {
             zh: {
                 musicOn: '音乐: 开', musicOff: '音乐: 关',
@@ -745,12 +745,13 @@
                 starTip: '点击星星点亮，再次点击取消',
                 posterTitle: '🎉 抽奖结果公示 🎉',
                 posterSub: '— 恭喜各位幸运儿 —',
-                uploadTip: '上传图片 (支持拖拽) / Upload Image\n(受限于浏览器本地缓存，≤1MB GIF保留动效，其余高清压缩)',
+                uploadTip: '上传图片 (支持拖拽) \n(受限于浏览器本地缓存，≤1MB GIF保留动效，其余高清压缩)',
                 alertPresetMax: '预设项最多只允许保留 20 个！请先删除不需要的预设。',
                 logPresetAdd: '已成功添加预设：{name}',
                 logPresetDel: '已删除预设',
                 logListImport: '已成功载入自定义名单。',
-                logListClear: '已退出自定义名单模式，恢复数字区间模式。'
+                logListClear: '已退出自定义名单模式，恢复数字区间模式。',
+                noMusic: '未检测到可用音频！\n👉 方案一：在同目录下放置 bgm.mp3, rolling.mp3, success.mp3（系统会自动读取）。\n👉 方案二：拖拽音频文件或点击 [📂 本地音乐] 手动导入BGM。'
             },
             en: {
                 musicOn: 'BGM: ON', musicOff: 'BGM: OFF',
@@ -797,4 +798,103 @@
                 logPresetAdd: 'Preset added: {name}',
                 logPresetDel: 'Preset deleted',
                 logListImport: 'Custom list imported successfully.',
-                logListClear: 'Custom list mode exited. Number range restored.'
+                logListClear: 'Custom list mode exited. Number range restored.',
+                noMusic: 'No audio detected!\n👉 Option 1: Place bgm.mp3, rolling.mp3, success.mp3 in the directory.\n👉 Option 2: Drag & drop or click [📂 Load Music] to import BGM.'
+            }
+        };
+
+        // ================= 3. UI 初始化与工具提示 =================
+        function initGlobalConfig() {
+            document.title = `${SYS_CONFIG.tag ? SYS_CONFIG.tag + ' ' : ''}Lottery Pro ${SYS_CONFIG.version}`;
+            document.getElementById('versionText').innerText = SYS_CONFIG.version;
+            document.getElementById('mainTitleZh').innerText = SYS_CONFIG.zh.mainTitle;
+            document.getElementById('mainTitleEn').innerText = SYS_CONFIG.en.mainTitle;
+            document.getElementById('subTitleZh').innerText = SYS_CONFIG.zh.subTitle;
+            document.getElementById('subTitleEn').innerText = SYS_CONFIG.en.subTitle;
+            document.getElementById('footerOrgZh').innerText = SYS_CONFIG.zh.footerOrg;
+            document.getElementById('footerOrgEn').innerText = SYS_CONFIG.en.footerOrg;
+            
+            const minEl = document.getElementById('minNum');
+            const maxEl = document.getElementById('maxNum');
+            const batchEl = document.getElementById('batchNum');
+            const excEl = document.getElementById('excludeNum');
+            if (minEl) lastMin = minEl.value;
+            if (maxEl) lastMax = maxEl.value;
+            if (batchEl) lastBatch = batchEl.value;
+            if (excEl) lastExclude = excEl.value.trim();
+        }
+
+        function t(key, params={}) {
+            let text = i18n[currentLang][key] || key;
+            for(let k in params) text = text.replace('{'+k+'}', params[k]);
+            return text;
+        }
+
+        function getCoreActivityTitle() {
+            let rawActName = document.getElementById('activityTitle').innerText.replace(/[\r\n]+/g, ' ').trim();
+            let match = rawActName.match(/——(.*?)——/);
+            let coreTitle = match ? match[1].trim() : rawActName.replace(/——/g, '').trim();
+            return coreTitle || "Lottery Activity";
+        }
+
+        function updateTooltips() {
+            const isZh = currentLang === 'zh';
+            const setAttr = (id, attr, val) => { const el = document.getElementById(id); if (el) el.setAttribute(attr, val); };
+            
+            setAttr('importBtnUI', 'title', isZh ? "导入名单 (支持 .xlsx, .xls, .csv, .txt)\n支持直接将文件拖拽至此按钮或右侧蓝色摇奖区。\n注意：Excel仅读取Sheet1的A列，请删去表头！" : "Import List (.xlsx, .csv, .txt)\nSupport Drag & Drop to this button or the blue display area.\nNote: Reads only Column A of Sheet1. Remove headers!");
+            setAttr('controlBtn', 'title', isZh ? "开始抽奖 (快捷键: 空格)" : "Start Draw (Hotkey: Space)");
+            setAttr('btnResetUI', 'title', isZh ? "清空当前所有抽奖记录并将人员重置回候选池" : "Reset all records & restore pool");
+            setAttr('themeBtn', 'title', isZh ? "切换暗黑/明亮模式 (快捷键: D)" : "Toggle Dark/Light Mode (Hotkey: D)");
+            setAttr('fullscreenBtn', 'title', isZh ? "切换全屏 (快捷键: F)" : "Toggle Fullscreen (Hotkey: F)");
+            setAttr('loadMusicBtn', 'title', isZh ? "导入本地音频 (.mp3, .flac)\n支持拖拽音频文件至此区" : "Load Audio files (.mp3, .flac)\nDrag & Drop supported");
+            setAttr('musicBtn', 'title', isZh ? "切换音乐播放/暂停 (快捷键: M)" : "Toggle Music (Hotkey: M)");
+            setAttr('btnExportState', 'title', isZh ? "导出当前所有数据与设置快照" : "Export all data & settings snapshot");
+            setAttr('btnImportState', 'title', isZh ? "导入备份的状态快照" : "Import state snapshot backup");
+            setAttr('addPresetBtn', 'title', isZh ? "将左侧当前的设置保存为一个快捷页签" : "Save current left-side settings as a quick preset tab");
+            setAttr('btnGeneratePoster', 'title', isZh ? "生成近期有效记录的精美海报 (.png)" : "Generate poster of recent valid records (.png)");
+            setAttr('btnExportLog', 'title', isZh ? "导出全部历史与审计日志 (.csv)" : "Export all history and audit logs (.csv)");
+            
+            setAttr('boxVar', 'title', t('varTitle'));
+            setAttr('boxOE', 'title', t('oeTitle'));
+            setAttr('boxHM', 'title', t('hmTitle'));
+            setAttr('starWrapper', 'title', t('starTip'));
+            
+            const uploadIcon = document.querySelector('.upload-icon-btn');
+            if (uploadIcon) uploadIcon.title = t('uploadTip');
+        }
+
+        function updateMusicName(name) {
+            const el = document.getElementById('musicNameText');
+            if(el) {
+                el.innerText = name;
+                el.classList.remove('marquee-text');
+                setTimeout(() => { if (el.scrollWidth > 110) { el.classList.add('marquee-text'); } }, 50);
+            }
+        }
+
+        function toggleListModeUI(active) {
+            document.getElementById('itemMin').style.display = active ? 'none' : 'flex';
+            document.getElementById('itemMax').style.display = active ? 'none' : 'flex';
+            document.getElementById('itemExclude').style.display = active ? 'none' : 'flex';
+            document.getElementById('customPoolAlert').style.display = active ? 'flex' : 'none';
+            
+            document.getElementById('meanBoard').style.display = active ? 'none' : 'flex';
+            document.getElementById('advancedBoard').style.display = active ? 'none' : 'flex';
+
+            if (active) {
+                document.getElementById('statsTitleZh').innerText = "📊 抽奖日志";
+                document.getElementById('statsTitleEn').innerText = "📊 Draw Logs";
+            } else {
+                document.getElementById('statsTitleZh').innerText = "📊 抽奖统计与日志";
+                document.getElementById('statsTitleEn').innerText = "📊 Stats & Logs";
+            }
+        }
+
+        function updateLogButtonsLanguage() {
+            document.querySelectorAll('.invalid-btn').forEach(btn => {
+                if (btn.id.startsWith('btn-cancel-')) {
+                    btn.innerText = currentLang === 'zh' ? '取消' : 'Cancel';
+                    btn.title = currentLang === 'zh' ? '取消' : 'Cancel';
+                } else if (btn.id.startsWith('btn-invalid-')) {
+                    if (btn.classList.contains('restore-btn')) {
+                        btn.innerText = currentLang === 'zh' ? '恢复' : 'Restore';
