@@ -1,0 +1,800 @@
+,zneg<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lottery Pro</title>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <style>
+        /* ================= 核心 CSS 变量系统 ================= */
+        :root {
+            --bg-body: linear-gradient(135deg, #f4f7f6 0%, #e2e8f0 100%);
+            --bg-panel: rgba(255, 255, 255, 0.95);
+            --text-main: #2c3e50;
+            --text-muted: #718096;
+            --text-light: #a0aec0;
+            --border-color: #e2e8f0;
+            --input-bg: #f8fafc;
+            --display-bg: #f0f7ff;
+            --display-border: #a3cbf1;
+            --display-text: #2980b9;
+            --display-card: white;
+            --shadow-base: rgba(0,0,0,0.05);
+            --btn-reset-bg: #718096;
+            --modal-bg: rgba(0,0,0,0.65);
+            --modal-card: white;
+            --board-bg: #fffaf0;
+            --board-border: #feebc8;
+            --board-border-dash: #fbd38d;
+            --list-border: #edf2f7;
+            --sys-log-bg: #ebf8ff;
+            --conf-log-bg: #f0fff4;
+            --tip-log-bg: #fffbeb;
+            --prize-log-bg: #fffbeb;
+            --prize-log-border: #fde68a;
+            --highlight-text: #dd6b20;
+            --lucky-text: #f59e0b; 
+            --theme-transition: background 0.4s ease, color 0.4s ease, border-color 0.4s ease, box-shadow 0.4s ease;
+        }
+
+        [data-theme="dark"] {
+            --bg-body: radial-gradient(circle at 50% 0%, #1f2937 0%, #000000 100%);
+            --bg-panel: rgba(15, 23, 42, 0.85);
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --text-light: #64748b;
+            --border-color: #334155;
+            --input-bg: #1e293b;
+            --display-bg: #0f172a;
+            --display-border: #d4af37;
+            --display-text: #d4af37;
+            --display-card: #1e293b;
+            --shadow-base: rgba(0,0,0,0.5);
+            --btn-reset-bg: #475569;
+            --modal-bg: rgba(0,0,0,0.85);
+            --modal-card: #1e293b;
+            --board-bg: rgba(212, 175, 55, 0.05);
+            --board-border: rgba(212, 175, 55, 0.2);
+            --board-border-dash: rgba(212, 175, 55, 0.3);
+            --list-border: #334155;
+            --sys-log-bg: rgba(49, 130, 206, 0.1);
+            --conf-log-bg: rgba(56, 161, 105, 0.1);
+            --tip-log-bg: rgba(214, 158, 46, 0.1);
+            --prize-log-bg: rgba(214, 158, 46, 0.15);
+            --prize-log-border: rgba(214, 158, 46, 0.3);
+            --highlight-text: #fcd34d;
+            --lucky-text: #fbbf24; 
+        }
+
+        body { font-family: 'Segoe UI', 'Microsoft YaHei', Tahoma, Geneva, Verdana, sans-serif; display: flex; flex-direction: column; align-items: center; min-height: 100vh; background: var(--bg-body); margin: 0; padding: 40px 20px 20px 20px; box-sizing: border-box; color: var(--text-main); overflow-x: hidden; transition: var(--theme-transition); }
+        .top-controls { position: absolute; top: 20px; right: 30px; display: flex; gap: 15px; font-size: 14px; font-weight: bold; color: var(--text-muted); z-index: 100; align-items: center; transition: var(--theme-transition); }
+        .top-btn { cursor: pointer; transition: color 0.2s; user-select: none; text-decoration: none; color: inherit; display: flex; align-items: center; gap: 6px;}
+        .top-btn:hover { color: #d4af37; }
+        body.en .lang-zh { display: none !important; }
+        body.zh .lang-en { display: none !important; }
+
+        .vol-control-wrap { position: relative; display: inline-flex; align-items: center; height: 100%; }
+        .vol-bubble { 
+            position: absolute; top: calc(100% + 12px); left: 50%; transform: translateX(-50%) translateY(10px); 
+            background: var(--bg-panel); border: 1px solid var(--border-color); border-radius: 12px; 
+            padding: 10px; box-shadow: 0 10px 25px var(--shadow-base); 
+            opacity: 0; visibility: hidden; transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1); 
+            z-index: 200; display: flex; flex-direction: column; gap: 5px;
+        }
+        .vol-bubble::before { 
+            content: ''; position: absolute; top: -6px; left: 50%; transform: translateX(-50%); 
+            border-width: 0 6px 6px 6px; border-style: solid; 
+            border-color: transparent transparent var(--bg-panel) transparent; 
+        }
+        .vol-control-wrap::after { content: ''; position: absolute; top: 100%; left: 0; width: 100%; height: 15px; background: transparent; }
+        .vol-control-wrap:hover .vol-bubble { opacity: 1; visibility: visible; transform: translateX(-50%) translateY(0); }
+        
+        .vol-track-name-box { width: 110px; overflow: hidden; height: 16px; position: relative; }
+        .vol-track-name { font-size: 11px; color: var(--text-muted); white-space: nowrap; position: absolute; left: 50%; transform: translateX(-50%); }
+        .vol-track-name.marquee-text { left: 100%; transform: none; animation: scrollText 5s linear infinite; }
+        @keyframes scrollText { 0% { transform: translateX(0); } 100% { transform: translateX(-100%); } }
+
+        .vol-slider { width: 80px; height: 4px; -webkit-appearance: none; background: var(--border-color); border-radius: 2px; outline: none; cursor: pointer; transition: var(--theme-transition); }
+        .vol-slider::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 14px; border-radius: 50%; background: #3498db; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.2); transition: transform 0.2s; }
+        .vol-slider::-webkit-slider-thumb:hover { transform: scale(1.3); background: #2980b9; }
+
+        .main-wrapper { display: flex; flex-direction: row; gap: 30px; justify-content: center; max-width: 1400px; width: 100%; align-items: stretch; margin-top: 20px;}
+        .panel { background: var(--bg-panel); padding: 40px; border-radius: 20px; box-shadow: 0 15px 35px var(--shadow-base), 0 5px 15px var(--shadow-base); box-sizing: border-box; transition: var(--theme-transition); border: 1px solid var(--border-color);}
+        .lottery-panel { flex: 1.618; min-width: 450px; display: flex; flex-direction: column; position: relative;}
+
+        @media (min-width: 901px) { 
+            .stats-panel-wrapper { flex: 1; min-width: 450px; position: relative; } 
+            .stats-panel-wrapper-inner { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; gap: 30px; }
+            .preset-panel { flex: 0.382; padding: 30px; display: flex; flex-direction: column; min-height: 0; overflow: hidden; margin: 0; }
+            .stats-panel { flex: 0.618; padding: 30px; display: flex; flex-direction: column; min-height: 0; margin: 0; } 
+        }
+        @media (max-width: 900px) { 
+            .main-wrapper { flex-direction: column; } .lottery-panel, .stats-panel-wrapper { width: 100%; } 
+            .stats-panel-wrapper-inner { display: flex; flex-direction: column; gap: 20px; width: 100%; }
+            .preset-panel { height: 350px; padding: 25px 30px;} .stats-panel { height: 600px; padding: 25px 30px;}
+            .flex-row-setting { flex-direction: column !important; } 
+        }
+
+        h1 { margin-top: 0; font-size: 32px; color: var(--text-main); margin-bottom: 8px; letter-spacing: 2px; transition: var(--theme-transition);}
+        .subtitle { font-size: 18px; color: var(--text-muted); margin-top: 0; margin-bottom: 25px; font-weight: 500; transition: var(--theme-transition);}
+        .hint { font-size: 14px; color: var(--text-muted); margin-bottom: 30px; transition: var(--theme-transition);}
+
+        .panel-header-wrapper { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--border-color); padding-bottom: 15px; margin-bottom: 20px; transition: var(--theme-transition); flex-shrink: 0;}
+        .panel-header-wrapper h3 { margin: 0; font-size: 20px; color: var(--text-main); transition: var(--theme-transition);}
+        .sys-clock { font-family: 'Consolas', 'Courier New', monospace; font-size: 14px; color: var(--text-muted); background: var(--input-bg); border: 1px solid var(--border-color); padding: 6px 12px; border-radius: 8px; font-weight: bold; transition: var(--theme-transition);}
+
+        .settings-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px 25px; margin-bottom: 30px; text-align: left; position: relative;}
+        .setting-item { display: flex; flex-direction: column; width: 100%; position: relative;}
+        .setting-item.full-width { grid-column: 1 / -1; }
+        
+        .flex-row-setting { display: flex; flex-direction: row; gap: 25px; align-items: flex-start; }
+        .flex-1-setting { flex: 1; display: flex; flex-direction: column; min-width: 0; position: relative;} 
+        .star-setting-col { display: flex; flex-direction: column; flex-shrink: 0; }
+
+        .drag-active { position: relative; }
+        .drag-active::after { content: ''; position: absolute; inset: -4px; border: 3px dashed #3498db; background: rgba(52, 152, 219, 0.15); border-radius: 12px; z-index: 99; pointer-events: none; }
+
+        label { font-size: 15px; font-weight: 600; color: var(--text-muted); margin-bottom: 8px; transition: var(--theme-transition);}
+        
+        input[type="number"], input[type="text"] { width: 100%; box-sizing: border-box; padding: 12px 15px; border: 2px solid var(--border-color); border-radius: 10px; outline: none; font-size: 16px; transition: var(--theme-transition); background-color: var(--input-bg); color: var(--text-main); font-family: inherit; height: 50px; }
+        input:focus, textarea.scrollable-input:focus { border-color: #3498db; background-color: var(--bg-panel); box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1); }
+        input:disabled, textarea:disabled { opacity: 0.45; cursor: not-allowed; background-color: var(--border-color); }
+        
+        .input-with-icon { position: relative; display: flex; align-items: center; width: 100%; border-radius: 10px; }
+        .input-with-icon input[type="text"] { padding-right: 55px; } 
+        .upload-icon-btn { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); display: flex; align-items: center; justify-content: center; width: 38px; height: 38px; border-radius: 8px; color: var(--text-light); background: transparent; cursor: pointer; transition: all 0.2s ease; }
+        .upload-icon-btn:hover { background: var(--border-color); color: #3498db; transform: translateY(-50%) scale(1.05); }
+        .upload-icon-btn svg { width: 20px; height: 20px; }
+
+        #imgPreviewBox { margin-top: 12px; display: none; text-align: left; }
+        .img-preview-container { position: relative; display: inline-block; }
+        #imgPreviewBox img { max-height: 100px; border-radius: 8px; border: 1px solid var(--border-color); box-shadow: 0 2px 8px var(--shadow-base); object-fit: scale-down; display: block; cursor: zoom-in; background: var(--input-bg); transition: transform 0.2s;}
+        #imgPreviewBox img:hover { transform: scale(1.02); }
+        .delete-img-btn { position: absolute; top: -8px; right: -8px; width: 24px; height: 24px; background: #e74c3c; color: white; border: none; border-radius: 50%; font-size: 16px; line-height: 1; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 4px rgba(0,0,0,0.2); transition: transform 0.1s, background 0.2s; z-index: 10;}
+        .delete-img-btn:hover { background: #c0392b; transform: scale(1.15); }
+
+        textarea.scrollable-input { width: 100%; box-sizing: border-box; padding: 12px 15px; border: 2px solid var(--border-color); border-radius: 10px; outline: none; font-size: 16px; transition: var(--theme-transition); background-color: var(--input-bg); color: var(--text-main); font-family: inherit; white-space: nowrap; overflow-x: auto; overflow-y: hidden; resize: none; height: 50px; line-height: 22px; padding-bottom: 8px; }
+        textarea.scrollable-input::-webkit-scrollbar { height: 8px; }
+        textarea.scrollable-input::-webkit-scrollbar-thumb { background-color: var(--text-light); border-radius: 4px; }
+        
+        input::placeholder { color: var(--text-light); opacity: 0.45; font-weight: normal; transition: opacity 0.3s ease; }
+        textarea.scrollable-input::placeholder { color: #a0aec0 !important; opacity: 0.6 !important; font-weight: 400 !important; }
+        .hide-placeholder::placeholder { opacity: 0 !important; color: transparent !important; }
+        
+        .checkbox-label { display: inline-flex; width: fit-content; align-items: center; font-weight: 500; cursor: pointer; font-size: 15px; margin-top: 5px; color: var(--text-muted); transition: var(--theme-transition);}
+        .checkbox-label input { margin-right: 10px; width: 18px; height: 18px; cursor: pointer; }
+
+        .star-rating-wrapper { display: flex; align-items: center; justify-content: center; background: var(--input-bg); border: 2px solid var(--border-color); border-radius: 10px; padding: 0 15px; height: 50px; box-sizing: border-box; transition: var(--theme-transition); cursor: help;}
+        .star-rating { display: flex; gap: 8px; font-size: 28px; user-select: none; }
+        .star-rating .star { color: var(--border-color); cursor: pointer; transition: color 0.2s ease, transform 0.2s ease, text-shadow 0.2s ease; }
+        .star-rating .star:hover { transform: scale(1.15); }
+
+        .custom-pool-alert { background: var(--conf-log-bg); border: 1px dashed #2ecc71; border-radius: 12px; padding: 12px 20px; display: none; align-items: center; justify-content: space-between; margin-bottom: 0; animation: fadeIn 0.3s ease; transition: var(--theme-transition); box-sizing: border-box; width: 100%; grid-column: 1 / -1;}
+        .custom-pool-alert-left { display: flex; flex-direction: column; gap: 4px; }
+        .custom-pool-alert h4 { color: #27ae60; margin: 0; font-size: 16px; }
+        .custom-pool-alert p { color: #2ecc71; margin: 0; font-size: 13px; opacity: 0.9; font-weight: bold;}
+        .custom-pool-alert button { background: #e74c3c; color: white; border: none; padding: 8px 15px; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: bold; transition: 0.2s;}
+        .custom-pool-alert button:hover { background: #c0392b; transform: scale(1.02);}
+
+        .display { font-size: 80px; font-weight: bold; color: var(--display-text); background: var(--display-bg); border: 2px dashed var(--display-border); border-radius: 16px; margin: 0 0 30px 0; min-height: 180px; display: flex; justify-content: center; align-items: center; flex-wrap: wrap; padding: 20px; gap: 20px; cursor: pointer; position: relative; transition: var(--theme-transition); user-select: none; align-content: center; font-variant-numeric: tabular-nums; }
+        .display:hover { box-shadow: inset 0 0 20px rgba(41, 128, 185, 0.08); }
+        
+        .display span { background: var(--display-card); padding: 5px 25px; border-radius: 12px; box-shadow: 0 4px 10px var(--shadow-base); position: relative; z-index: 2; transition: var(--theme-transition); display: inline-block; text-align: center; box-sizing: border-box; max-width: 100%; font-size: clamp(20px, 5vw, 70px); vertical-align: middle; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
+        
+        .btn-group { display: flex; gap: 15px; width: 100%; position: relative; z-index: 5; }
+        .btn { padding: 18px; font-size: 22px; font-weight: bold; letter-spacing: 2px; color: white; border: none; border-radius: 12px; cursor: pointer; transition: all 0.3s ease; position: relative; }
+        .btn-main { flex: 2.5; background-color: #2ecc71; box-shadow: 0 6px 20px rgba(46, 204, 113, 0.3); }
+        .btn-main:hover { transform: translateY(-3px); box-shadow: 0 8px 25px rgba(46, 204, 113, 0.4); }
+        .btn-main.stop { background-color: #e74c3c; box-shadow: 0 6px 20px rgba(231, 76, 60, 0.3); }
+        .btn-import { flex: 1; font-size: 16px; background-color: #3498db; box-shadow: 0 6px 20px rgba(52, 152, 219, 0.3); transition: var(--theme-transition); padding: 18px 5px;}
+        .btn-import:hover { transform: translateY(-2px); filter: brightness(1.1); }
+        .btn-reset { flex: 1; font-size: 16px; background-color: var(--btn-reset-bg); box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2); transition: var(--theme-transition); padding: 18px 5px;}
+        .btn-reset:hover { transform: translateY(-2px); filter: brightness(1.1); }
+
+        .add-preset-btn { background: #10b981; color: white; border: none; padding: 6px 14px; border-radius: 6px; font-size: 14px; font-weight: bold; cursor: pointer; transition: all 0.2s;}
+        .add-preset-btn:hover { background: #059669; }
+        
+        .preset-list { flex: 1; overflow-y: scroll; overflow-x: hidden; display: flex; flex-direction: column; gap: 8px; margin: 0; padding: 6px 10px 6px 4px; list-style: none; min-height: 0; width: 100%;}
+        .preset-list::-webkit-scrollbar { width: 6px; }
+        .preset-list::-webkit-scrollbar-track { background: transparent; }
+        .preset-list::-webkit-scrollbar-thumb { background-color: var(--border-color); border-radius: 8px; }
+        
+        .preset-item { display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; border-radius: 10px; background: var(--input-bg); border: 1px solid var(--border-color); cursor: pointer; transition: all 0.2s ease; position: relative; box-sizing: border-box; width: calc(100% - 6px); max-width: calc(100% - 6px); margin-right: 6px;}
+        .preset-item:hover { border-color: #3498db; transform: translateX(2px); }
+        .preset-item.active { background: rgba(52, 152, 219, 0.12); border: 1px solid #3498db; border-left: 5px solid #2980b9; padding: 10px 12px 10px 8px; box-shadow: 0 4px 15px rgba(52, 152, 219, 0.25); }
+        [data-theme="dark"] .preset-item.active { background: rgba(52, 152, 219, 0.25); border-color: #3498db; border-left-color: #60a5fa;}
+        .preset-item.drawn { opacity: 0.45; filter: grayscale(1); pointer-events: none; }
+        
+        .preset-seq { width: 22px; height: 22px; border-radius: 50%; background: #3498db; color: white; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: bold; margin-right: 10px; flex-shrink: 0; box-shadow: 0 2px 4px rgba(52, 152, 219, 0.3); transition: var(--theme-transition);}
+        .preset-item.drawn .preset-seq { background: var(--text-light); box-shadow: none; }
+
+        .preset-info { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 0; overflow: hidden;}
+        .preset-name { font-weight: bold; font-size: 15px; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
+        .preset-sub { font-size: 12px; color: var(--text-light); display: flex; gap: 8px; align-items: center;}
+        .preset-badge { background: rgba(52, 152, 219, 0.15); color: #2980b9; border: 1px solid rgba(52, 152, 219, 0.3); padding: 1px 6px; border-radius: 4px; font-weight: bold; transition: var(--theme-transition); white-space: nowrap;}
+        
+        .preset-thumb { width: 44px; height: 44px; border-radius: 6px; object-fit: scale-down; background: var(--bg-panel); border: 1px solid var(--border-color); flex-shrink: 0; margin-left: 10px;}
+        
+        .preset-controls { display: flex; align-items: center; gap: 4px; opacity: 0; transition: opacity 0.2s; margin-left: 8px; flex-shrink: 0; }
+        .preset-item:hover .preset-controls { opacity: 1; }
+        .preset-move-group { display: flex; flex-direction: column; gap: 4px; align-items: center; justify-content: center;}
+        
+        .preset-move-btn { 
+            background: none; border: none; color: var(--text-light); 
+            cursor: pointer; padding: 2px; line-height: 1; 
+            display: flex; align-items: center; justify-content: center; 
+            transition: all 0.2s; border-radius: 4px;
+        }
+        .preset-move-btn svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+        .preset-move-btn:hover { color: #3498db; transform: scale(1.15);}
+        .preset-move-placeholder { width: 18px; height: 18px; }
+
+        .preset-badge-del { position: absolute; top: -6px; right: -6px; background: #e74c3c; color: white; border: none; border-radius: 50%; width: 20px; height: 20px; font-size: 14px; line-height: 1; cursor: pointer; display: none; align-items: center; justify-content: center; z-index: 10; box-shadow: 0 2px 4px rgba(0,0,0,0.2); transition: transform 0.1s; padding-bottom: 2px;}
+        .preset-item:hover .preset-badge-del { display: flex; }
+        .preset-badge-del:hover { transform: scale(1.15); background: #c0392b;}
+
+        .mean-board { background: var(--board-bg); border: 1px solid var(--board-border); padding: 12px 10px; border-radius: 12px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; transition: var(--theme-transition); flex-shrink: 0;}
+        .mean-box { flex: 1; text-align: center; border-right: 1px dashed var(--board-border-dash); padding: 0 5px; transition: var(--theme-transition);}
+        .mean-box:last-child { border-right: none; }
+        .mean-label { font-size: 12px; color: var(--text-muted); margin-bottom: 4px; transition: var(--theme-transition);}
+        .mean-val { font-size: 22px; font-weight: bold; color: var(--highlight-text); transition: var(--theme-transition);}
+
+        .advanced-board { background: var(--input-bg); border: 1px solid var(--border-color); padding: 12px 10px; border-radius: 12px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; gap: 5px; transition: var(--theme-transition); flex-shrink: 0;}
+        .adv-box { flex: 1; text-align: center; border-right: 1px dashed var(--border-color); padding: 0 5px; display: flex; flex-direction: column; justify-content: center; align-items: center; min-height: 44px; cursor: help; transition: var(--theme-transition);}
+        .adv-box:last-child { border-right: none; }
+        .adv-label { font-size: 12px; color: var(--text-muted); margin-bottom: 6px; font-weight: 600; transition: var(--theme-transition);}
+        .adv-val { font-size: 14px; font-weight: bold; color: var(--text-main); display: flex; gap: 4px; flex-wrap: nowrap; justify-content: center; width: 100%; transition: var(--theme-transition);}
+        
+        .badge { padding: 3px 6px; border-radius: 6px; font-size: 12px; font-weight: 600; white-space: nowrap; cursor: default; }
+        .bg-odd { background: rgba(67, 56, 202, 0.15); color: #6366f1; }
+        .bg-even { background: rgba(21, 128, 61, 0.15); color: #22c55e; }
+        .bg-low { background: rgba(225, 29, 72, 0.15); color: #fb7185; }
+        .bg-mid { background: rgba(161, 98, 7, 0.15); color: #facc15; }
+        .bg-high { background: rgba(3, 105, 161, 0.15); color: #38bdf8; }
+        .empty-text { color: var(--text-light); font-size: 13px; font-weight: normal; }
+
+        .history-list { list-style: none; padding: 0; margin: 0; overflow-y: auto; flex: 1; min-height: 0; text-align: left; }
+        .history-list::-webkit-scrollbar { width: 8px; }
+        .history-list::-webkit-scrollbar-thumb { background-color: var(--border-color); border-radius: 10px; }
+        
+        .history-item { display: flex; align-items: flex-start; padding: 15px 5px; border-bottom: 1px solid var(--list-border); font-size: 15px; animation: fadeIn 0.4s ease; position: relative; transition: opacity 0.3s; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: translateX(0); } }
+        .history-item:last-child { border-bottom: none; }
+        
+        .history-item.invalidated { opacity: 0.45; }
+        .history-item.invalidated .history-numbers { text-decoration: line-through; color: var(--text-light); }
+        .history-item.invalidated .exclude-log-text { text-decoration: line-through; color: var(--text-light) !important; }
+
+        .invalid-btn { font-size: 12px; color: #e74c3c; background: transparent; border: 1px solid #e74c3c; border-radius: 4px; cursor: pointer; padding: 2px 6px; opacity: 0; transition: all 0.2s; font-family: inherit; margin-top: 5px;}
+        .invalid-btn:hover { background: #e74c3c; color: white; }
+        .invalid-btn.restore-btn { color: #38a169; border-color: #38a169; }
+        .invalid-btn.restore-btn:hover { background: #38a169; color: white; }
+        .history-item:hover .invalid-btn { opacity: 1; }
+        .history-item.invalidated .invalid-btn { opacity: 0.8; }
+        .history-item.invalidated:hover .invalid-btn { opacity: 1; }
+
+        .item-col-left { flex: 0 0 65px; font-weight: bold; color: var(--text-muted); padding-top: 2px; }
+        .item-col-middle { flex: 1; display: flex; flex-direction: column; align-items: flex-end; padding: 0 15px; min-width: 0; }
+        .history-numbers { font-weight: bold; color: var(--lucky-text); text-align: right; word-break: break-all; line-height: 1.4; transition: color 0.3s; }
+        
+        .history-prize-wrap { display: flex; align-items: center; justify-content: flex-end; gap: 10px; margin-top: 6px; width: 100%; flex-wrap: wrap;}
+        .history-prize-text { font-size: 14px; color: var(--highlight-text); font-weight: 600; background: var(--prize-log-bg); padding: 5px 10px; border-radius: 6px; border: 1px solid var(--prize-log-border); display: inline-block; text-align: right; line-height: 1.5; word-break: break-all; white-space: normal; max-width: 100%; box-sizing: border-box; transition: var(--theme-transition);}
+        .history-prize-img { height: 28px; border-radius: 4px; object-fit: contain; border: 1px solid var(--border-color); background: var(--input-bg); }
+
+        .pool-info { font-size: 12px; color: var(--text-light); font-weight: normal; margin-top: 6px; }
+        .item-col-right { flex: 0 0 85px; text-align: right; color: var(--text-light); font-size: 12px; padding-top: 3px; font-family: 'Consolas', monospace; line-height: 1.5; display: flex; flex-direction: column; align-items: flex-end; justify-content: flex-start;}
+
+        .stats-footer { display: flex; justify-content: space-between; margin-top: 15px; border-top: 1px dashed var(--border-color); padding-top: 15px; transition: var(--theme-transition); flex-shrink: 0;}
+        .action-btn { background: none; border: none; font-size: 13px; cursor: pointer; transition: all 0.2s; padding: 0; font-family: inherit; font-weight: bold; }
+        .export-btn { color: var(--text-light); } .export-btn:hover { color: var(--text-main); text-decoration: underline; }
+        .poster-btn { color: var(--highlight-text); } .poster-btn:hover { opacity: 0.8; text-decoration: underline; }
+
+        .instruction-box { max-width: 1400px; width: 100%; margin-top: 30px; font-size: 14px; color: var(--text-muted); line-height: 1.8; text-align: left; padding: 20px; background: rgba(52, 152, 219, 0.05); border-radius: 12px; box-sizing: border-box; border: 1px dashed #a3cbf1; transition: var(--theme-transition); display: flex; flex-direction: column; gap: 15px;}
+        .disclaimer { max-width: 1400px; width: 100%; margin-top: 15px; font-size: 13px; color: var(--text-muted); line-height: 1.8; text-align: justify; padding: 20px; background: rgba(150,150,150,0.1); border-radius: 12px; box-sizing: border-box; border: 1px solid var(--border-color); transition: var(--theme-transition); }
+        .footer-copyright { margin-top: 25px; font-size: 12px; color: var(--text-light); text-align: center; letter-spacing: 1px; opacity: 0.8; transition: var(--theme-transition);}
+
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--modal-bg); justify-content: center; align-items: center; z-index: 1000; backdrop-filter: blur(5px); transition: background 0.4s ease;}
+        .modal-content { background: var(--modal-card); padding: 50px 60px; border-radius: 20px; text-align: center; animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); max-width: 80%; box-shadow: 0 25px 50px rgba(0,0,0,0.5); transition: var(--theme-transition);}
+        @keyframes popIn { from { transform: scale(0.8) translateY(20px); opacity: 0; } to { transform: scale(1) translateY(0); opacity: 1; } }
+        
+        #shakeContainer { transform-origin: center; display: flex; flex-direction: column; align-items: center;}
+        @keyframes epicShake { 0%, 100% { transform: translate(0, 0) rotate(0deg); } 10% { transform: translate(-8px, -8px) rotate(-3deg); } 20% { transform: translate(8px, 6px) rotate(3deg); } 30% { transform: translate(-6px, 8px) rotate(-2deg); } 40% { transform: translate(6px, -6px) rotate(2deg); } 50% { transform: translate(-4px, -4px) rotate(-1deg); } 60% { transform: translate(4px, 4px) rotate(1deg); } 70% { transform: translate(-2px, -2px) rotate(0deg); } 80% { transform: translate(2px, 2px) rotate(0deg); } }
+        .modal-epic-shake { animation: epicShake 0.65s cubic-bezier(.36,.07,.19,.97) both; }
+
+        .modal h2 { color: var(--display-border); margin: 0 0 20px 0; font-size: 36px; transition: var(--theme-transition);}
+        .modal-prize-box { display: flex; flex-direction: column; align-items: center; gap: 15px; margin-bottom: 25px; width: 100%; justify-content: center; }
+        .modal-prize-highlight-text { background: var(--prize-log-bg); border: 2px dashed var(--prize-log-border); border-radius: 12px; padding: 10px 25px; color: var(--highlight-text); font-size: 22px; font-weight: bold; box-shadow: 0 4px 15px rgba(0,0,0,0.1); transition: var(--theme-transition);}
+        .modal-prize-img-preview { max-height: 280px; max-width: 100%; object-fit: scale-down; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); border: 3px solid var(--border-color); background: var(--input-bg); }
+        
+        .modal-number { font-size: 70px; color: var(--lucky-text); font-weight: bold; margin: 0 auto 40px auto; max-width: 650px; line-height: 1.2; display: flex; flex-wrap: wrap; justify-content: center; gap: 15px; }
+        .modal-number span { background: var(--input-bg); border: 2px solid var(--lucky-text); border-radius: 15px; padding: 5px 25px; transition: var(--theme-transition); font-size: clamp(30px, 6vw, 70px); max-width: 100%; box-sizing: border-box; white-space: normal; word-break: break-word; box-shadow: 0 4px 12px rgba(0,0,0,0.08); text-shadow: 1px 1px 2px rgba(0,0,0,0.1);}
+        
+        .close-btn { padding: 15px 40px; font-size: 18px; font-weight: bold; background: #3182ce; color: white; border: none; border-radius: 10px; cursor: pointer; transition: background 0.3s; }
+        .close-btn:hover { background: #2b6cb0; }
+
+        #poolModal .modal-content { max-width: 900px; width: 85%; padding: 40px 50px; }
+        #poolModal h2 { color: #3182ce; font-size: 28px; margin-bottom: 25px; }
+        .pool-badge { display: inline-block; background: var(--sys-log-bg); border: 1px solid var(--border-color); color: var(--text-main); padding: 6px 14px; border-radius: 8px; margin: 0; font-size: 16px; font-weight: bold; box-shadow: 0 2px 4px var(--shadow-base); transition: var(--theme-transition);}
+        
+        .pool-badge-wrapper { position: relative; display: inline-block; margin: 8px 6px; }
+        .pool-badge-del { position: absolute; top: -8px; right: -8px; background: #e74c3c; color: white; border: none; border-radius: 50%; width: 22px; height: 22px; font-size: 14px; line-height: 1; cursor: pointer; display: none; align-items: center; justify-content: center; z-index: 5; box-shadow: 0 2px 4px rgba(0,0,0,0.2); transition: transform 0.1s;}
+        .pool-badge-wrapper:hover .pool-badge-del { display: flex; }
+        .pool-badge-del:hover { transform: scale(1.15); background: #c0392b;}
+
+        .pool-text-view { font-size: 16px; color: var(--text-main); line-height: 1.8; word-break: break-all; text-align: justify; max-height: 400px; overflow-y: auto; padding: 15px; background: var(--input-bg); border-radius: 10px; border: 1px solid var(--border-color); font-family: 'Consolas', monospace; transition: var(--theme-transition);}
+        .pool-text-view::-webkit-scrollbar { width: 8px; }
+        .pool-text-view::-webkit-scrollbar-thumb { background-color: var(--border-color); border-radius: 10px; }
+        .pool-empty, .pool-huge { color: #e53e3e; font-weight: bold; font-size: 20px; padding: 30px; }
+        .pool-huge { color: #dd6b20; }
+        .pool-huge span { font-size: 14px; color: var(--text-muted); font-weight: normal; display: block; margin-top: 15px; transition: var(--theme-transition);}
+
+        #confettiCanvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 9999; display: none; }
+        
+        #imageModal .modal-content { padding: 30px 40px; display: flex; flex-direction: column; align-items: center; min-width: 320px; }
+        #largePreviewImg { max-width: 100%; max-height: 60vh; object-fit: scale-down; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.3); border: 2px solid var(--border-color); background: var(--input-bg); }
+    </style>
+</head>
+<body class="zh">
+
+    <audio id="bgmAudio" src="bgm.mp3" loop preload="auto"></audio>
+    <audio id="rollingAudio" src="rolling.mp3" loop preload="auto"></audio>
+    <audio id="successAudio" src="success.mp3" preload="auto"></audio>
+    
+    <input type="file" id="localBgmInput" accept=".mp3,.flac" style="display:none;">
+    <input type="file" id="importListInput" accept=".xlsx, .xls, .csv, .txt" style="display:none;">
+    <input type="file" id="importStateInput" accept=".json" style="display:none;">
+
+    <canvas id="confettiCanvas"></canvas>
+
+    <div class="top-controls">
+        <a class="top-btn" href="https://github.com/T1MESX/Lottery-Pro" target="_blank" title="GitHub Repository">
+            <svg height="18" viewBox="0 0 16 16" width="18" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"></path></svg>
+            <span id="versionText">v3.1.3</span>
+        </a>
+        <span>|</span>
+        <span class="top-btn" id="btnExportState" onclick="exportState()">
+            <span class="lang-zh">💾 导出快照</span><span class="lang-en">💾 EXPORT</span>
+        </span>
+        <span>|</span>
+        <span class="top-btn" id="btnImportState" onclick="document.getElementById('importStateInput').click()">
+            <span class="lang-zh">📥 导入快照</span><span class="lang-en">📥 IMPORT</span>
+        </span>
+        <span>|</span>
+        <span class="top-btn" id="themeBtn" onclick="toggleTheme()">
+            <span class="lang-zh" id="themeBtnText">🌙 影院模式</span><span class="lang-en" id="themeBtnTextEn">🌙 Cinema Mode</span>
+        </span>
+        <span>|</span>
+        <span class="top-btn" id="fullscreenBtn" onclick="toggleFullscreen()">
+            <span class="lang-zh">🔲 全屏</span><span class="lang-en">🔲 Fullscreen</span>
+        </span>
+        <span>|</span>
+        <span class="top-btn" id="loadMusicBtn" onclick="document.getElementById('localBgmInput').click()">
+            <span class="lang-zh">📂 本地音乐</span><span class="lang-en">📂 Load Music</span>
+        </span>
+        <span>|</span>
+        
+        <div class="vol-control-wrap">
+            <span class="top-btn" id="musicBtn" onclick="toggleMusic()">🎵 <span class="lang-zh">音乐: 关</span><span class="lang-en">BGM: OFF</span></span>
+            <div class="vol-bubble">
+                <div class="vol-track-name-box" id="musicNameBox">
+                    <div class="vol-track-name" id="musicNameText">bgm.mp3</div>
+                </div>
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <span style="font-size:12px; color:var(--text-muted);">🔈</span>
+                    <input type="range" id="volSlider" class="vol-slider" min="0" max="1" step="0.01" value="0.5" title="音量调节 / Volume">
+                    <span style="font-size:12px; color:var(--text-muted);">🔊</span>
+                </div>
+            </div>
+        </div>
+
+        <span>|</span>
+        <span class="top-btn" id="langBtn" onclick="toggleLanguage()"><span class="lang-zh">EN</span><span class="lang-en">中</span></span>
+    </div>
+
+    <div class="main-wrapper">
+        <div class="panel lottery-panel">
+            <h1>
+                <span class="lang-zh" id="mainTitleZh"></span>
+                <span class="lang-en" id="mainTitleEn"></span>
+            </h1>
+            <h2 class="subtitle" id="activityTitle">
+                <span class="lang-zh" id="subTitleZh"></span>
+                <span class="lang-en" id="subTitleEn"></span>
+            </h2>
+            <div class="hint">
+                <span class="lang-zh">（支持点击底部按钮或按下 <b>空格键</b> 启停，<b>双击摇奖区</b> 透视候选池）</span>
+                <span class="lang-en">(Press <b>SPACE</b> to toggle. <b>DBL-CLICK blue area</b> to inspect candidates)</span>
+            </div>
+            
+            <div class="settings-grid">
+                
+                <div class="setting-item full-width flex-row-setting">
+                    <div class="flex-1-setting" id="prizeInputWrap">
+                        <label>
+                            <span class="lang-zh">奖项信息</span><span class="lang-en">Prize Info</span>
+                        </label>
+                        <div class="input-with-icon">
+                            <input type="text" id="prizeNote" placeholder="">
+                            <label for="prizeImage" class="upload-icon-btn">
+                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                            </label>
+                            <input type="file" id="prizeImage" accept="image/*" style="display:none;">
+                        </div>
+                        <div id="imgPreviewBox">
+                            <div class="img-preview-container">
+                                <img id="previewImg" src="" title="点击预览大图 / Click to preview">
+                                <button class="delete-img-btn" onclick="clearImage()" title="移除图片 / Remove">×</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="star-setting-col">
+                        <label>
+                            <span class="lang-zh">星级</span><span class="lang-en">Star Level</span>
+                        </label>
+                        <div class="star-rating-wrapper" id="starWrapper">
+                            <div class="star-rating" id="starContainer">
+                                <span class="star" data-value="1">★</span>
+                                <span class="star" data-value="2">★</span>
+                                <span class="star" data-value="3">★</span>
+                                <span class="star" data-value="4">★</span>
+                                <span class="star" data-value="5">★</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="custom-pool-alert full-width" id="customPoolAlert">
+                    <div class="custom-pool-alert-left">
+                        <h4>📁 <span class="lang-zh">自定义名单模式已激活</span><span class="lang-en">Custom Pool Activated</span></h4>
+                        <p id="customPoolAlertCount">--</p>
+                    </div>
+                    <button onclick="clearCustomPool()">
+                        <span class="lang-zh">退出名单模式</span><span class="lang-en">Exit List Mode</span>
+                    </button>
+                </div>
+
+                <div class="setting-item" id="itemMin">
+                    <label><span class="lang-zh">起始号码 (Min)</span><span class="lang-en">Start Num (Min)</span></label>
+                    <input type="number" id="minNum" value="1" min="1">
+                </div>
+                <div class="setting-item" id="itemMax">
+                    <label><span class="lang-zh">截止号码 (Max)</span><span class="lang-en">End Num (Max)</span></label>
+                    <input type="number" id="maxNum" value="100" min="1">
+                </div>
+                <div class="setting-item" id="itemBatch">
+                    <label><span class="lang-zh">单次抽取人数</span><span class="lang-en">Draw Batch Size</span></label>
+                    <input type="number" id="batchNum" value="1" min="1" max="100">
+                </div>
+                <div class="setting-item" id="itemExclude">
+                    <label><span class="lang-zh">排除名单 (支持 a-b 快速剔除)</span><span class="lang-en">Excludes (Supports a-b)</span></label>
+                    <textarea id="excludeNum" class="scrollable-input" placeholder="e.g.: 4, 8-12, 44, 55"></textarea>
+                </div>
+                <div class="setting-item full-width">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="noRepeat" checked>
+                        <span class="lang-zh">开启不重复模式 (已被抽中的数据将自动剔除)</span>
+                        <span class="lang-en">Enable No-Repeat (Winners are excluded from pool)</span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="display" id="numberDisplay" title="Double click to inspect pool">?</div>
+
+            <div class="btn-group">
+                <button class="btn btn-main" id="controlBtn">
+                    <span class="lang-zh">开始抽奖</span><span class="lang-en">START DRAW</span>
+                </button>
+                <button class="btn btn-import" id="importBtnUI" onclick="document.getElementById('importListInput').click()">
+                    <span class="lang-zh">📥 导入名单</span><span class="lang-en">📥 IMPORT LIST</span>
+                </button>
+                <button class="btn btn-reset" id="btnResetUI" onclick="resetPoolWithPrompt()">
+                    <span class="lang-zh">🔄 重置候选池</span><span class="lang-en">🔄 RESET</span>
+                </button>
+            </div>
+        </div>
+
+        <div class="stats-panel-wrapper">
+            <div class="stats-panel-wrapper-inner">
+                
+                <div class="panel preset-panel">
+                    <div class="panel-header-wrapper" style="margin-bottom: 12px; padding-bottom: 10px;">
+                        <h3>
+                            <span class="lang-zh">🎁 奖池 <span id="presetCounterZh" style="font-size: 14px; color: var(--text-light); font-weight: normal; margin-left: 8px;">(0/20)</span></span>
+                            <span class="lang-en">🎁 Prize Pool <span id="presetCounterEn" style="font-size: 14px; color: var(--text-light); font-weight: normal; margin-left: 8px;">(0/20)</span></span>
+                        </h3>
+                        <button class="add-preset-btn" id="addPresetBtn" onclick="addPreset()">&#10010; <span class="lang-zh">新增预设</span><span class="lang-en">Save</span></button>
+                    </div>
+                    <ul class="preset-list" id="presetList">
+                        <div style="text-align:center; color:var(--text-light); padding:20px; font-size:13px;" id="presetEmptyHint">
+                            <span class="lang-zh">暂无预设。在左侧填好奖品后点击上方添加。</span>
+                            <span class="lang-en">No presets. Fill prize info and click add.</span>
+                        </div>
+                    </ul>
+                </div>
+
+                <div class="panel stats-panel">
+                    <div class="panel-header-wrapper" id="statsTitleWrap">
+                        <h3>
+                            <span class="lang-zh" id="statsTitleZh">📊 抽奖日志</span>
+                            <span class="lang-en" id="statsTitleEn">📊 Draw Logs</span>
+                        </h3>
+                        <div class="sys-clock" id="sysClock">--</div>
+                    </div>
+                    
+                    <div class="mean-board" id="meanBoard">
+                        <div class="mean-box">
+                            <div class="mean-label"><span class="lang-zh">有效余量 / 总量</span><span class="lang-en">Remaining / Total</span></div>
+                            <div class="mean-val pool-size" id="poolSizeVal">--/--</div>
+                        </div>
+                        <div class="mean-box">
+                            <div class="mean-label"><span class="lang-zh">理论均值</span><span class="lang-en">Theo. Mean</span></div>
+                            <div class="mean-val theory" id="theoryMean">--</div>
+                        </div>
+                        <div class="mean-box">
+                            <div class="mean-label"><span class="lang-zh">实际均值</span><span class="lang-en">Actual Mean</span></div>
+                            <div class="mean-val" id="actualMean">--</div>
+                        </div>
+                    </div>
+
+                    <div class="advanced-board" id="advancedBoard">
+                        <div class="adv-box" id="boxVar">
+                            <div class="adv-label"><span class="lang-zh">📐 离散方差</span><span class="lang-en">📐 Variance</span></div>
+                            <div class="adv-val" id="varianceVal"><span class="empty-text">--</span></div>
+                        </div>
+                        <div class="adv-box" id="boxOE">
+                            <div class="adv-label"><span class="lang-zh">⚖️ 奇偶天平</span><span class="lang-en">⚖️ Odd/Even</span></div>
+                            <div class="adv-val" id="oddEvenVal"><span class="empty-text">--</span></div>
+                        </div>
+                        <div class="adv-box" id="boxHM">
+                            <div class="adv-label"><span class="lang-zh">🌡️ 区间热力</span><span class="lang-en">🌡️ Heatmap</span></div>
+                            <div class="adv-val" id="heatmapVal"><span class="empty-text">--</span></div>
+                        </div>
+                    </div>
+
+                    <ul class="history-list" id="historyList">
+                        <div style="text-align:center; color:var(--text-light); padding:30px 20px; font-size:14px;" id="emptyHint">
+                            <span class="lang-zh">系统就绪，暂无抽奖记录...</span>
+                            <span class="lang-en">System ready. No records yet...</span>
+                        </div>
+                    </ul>
+
+                    <div class="stats-footer">
+                        <button class="action-btn poster-btn" id="btnGeneratePoster" onclick="generatePoster()">
+                            <span class="lang-zh">[ 🎨 生成海报 ]</span><span class="lang-en">[ 🎨 Poster ]</span>
+                        </button>
+                        <button class="action-btn export-btn" id="btnExportLog" onclick="exportFormattedLogs()">
+                            <span class="lang-zh">[ ↓ 导出日志 ]</span><span class="lang-en">[ ↓ Export ]</span>
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <div class="instruction-box">
+        <div class="instruction-section">
+            <b><span class="lang-zh">💡 导入名单说明：</span><span class="lang-en">💡 Import Instructions:</span></b><br>
+            <span class="lang-zh">
+                1. 支持 <b>.xlsx, .xls, .txt, .csv</b> 格式，系统会自动去重并提示。<br>
+                2. Excel 仅解析 <b>Sheet1 的 A列</b>，⚠️ <b>请务必删除表头（第一行）</b>以防标题被当作人员抽中！<br>
+                3. txt/csv 支持<b>换行、空格、英文逗号(,)或中文逗号(，)</b>智能分割。
+            </span>
+            <span class="lang-en">
+                1. Supports <b>.xlsx, .xls, .txt, .csv</b> with auto-deduplication.<br>
+                2. Reads <b>Column A of Sheet1</b>. ⚠️ <b>Please remove the header row</b> to avoid drawing titles!<br>
+                3. txt/csv delimiters: newlines, spaces, commas.
+            </span>
+        </div>
+        <div class="instruction-section" style="margin-top: 0px;">
+            <b><span class="lang-zh">🎵 音乐与音效说明：</span><span class="lang-en">🎵 Audio Instructions:</span></b><br>
+            <span class="lang-zh">
+                1. 顶部导航栏支持点击或直接拖拽 <b>.mp3 / .flac</b> 加载背景音乐与滚轮音效。<br>
+                2. 音乐单曲循环，悬停“音乐”按钮可调节全局音量。亦可在同目录放置 <code>bgm.mp3</code>, <code>rolling.mp3</code>, <code>success.mp3</code> 自动加载。
+            </span>
+            <span class="lang-en">
+                1. Click or drag <b>.mp3 / .flac</b> to top nav for BGM and SFX.<br>
+                2. Hover "BGM" for volume. Auto-load via <code>bgm.mp3</code>, <code>rolling.mp3</code>, <code>success.mp3</code> in root.
+            </span>
+        </div>
+    </div>
+
+    <div class="disclaimer">
+        <b><span class="lang-zh">⚖️ 公平性与透明度说明：</span><span class="lang-en">⚖️ Fairness & Transparency Statement:</span></b><br>
+        <span class="lang-zh">
+            本终端为纯前端架构（SPA），所有名单解析与抽奖运算均在您的浏览器本地完成，数据绝不上传服务器，从根本上消除后端操作干预可能。在随机性方面，我们摒弃了普通的 <code>Math.random()</code>，采用密码学标准的安全引擎 (Web Crypto API CSPRNG) 配合拒绝采样算法，竭力保障每一次抽取的统计学公平。同时，系统内置了本地缓存灾备机制，即使意外断电刷新也能无损恢复进度。<br><br>
+            作为一款开源免费的纯技术工具，我们希望为您带来极客、专业且友好的活动体验。因第三方二次修改或部署产生的具体抽奖结果，还请以实际活动主办方的解释为准。祝大家逢抽必中！
+        </span>
+        <span class="lang-en">
+            This terminal operates as a pure frontend application (SPA). All list parsing and draw computations run entirely locally within your browser. No data is ever uploaded to a server, fundamentally eliminating backend manipulation. For randomness, we bypass standard <code>Math.random()</code> in favor of the Web Crypto API (CSPRNG) paired with Rejection Sampling to guarantee cryptographically secure and statistically uniform results. A local-storage-based disaster recovery mechanism is also built-in to seamlessly restore your progress upon accidental reloads.<br><br>
+            As a free and open-source utility, our goal is to provide a professional, transparent, and friendly experience. For any customized deployments, please refer to the specific event organizer for ultimate interpretation. Good luck and have fun!
+        </span>
+    </div>
+
+    <div class="footer-copyright">
+        <span class="lang-zh" id="footerOrgZh"></span>
+        <span class="lang-en" id="footerOrgEn"></span> &nbsp;|&nbsp; 
+        <a href="https://github.com/T1MESX/Lottery-Pro" target="_blank" style="color: inherit; text-decoration: none;">Designed by T1MESX</a>
+    </div>
+
+    <div class="modal" id="resultModal">
+        <div class="modal-content" id="modalBox">
+            <div id="shakeContainer">
+                <h2>🎉 <span class="lang-zh">恭喜中奖</span><span class="lang-en">Congratulations</span> 🎉</h2>
+                <div id="modalPrizeInfo"></div>
+                <div class="modal-number" id="modalNumber"></div>
+                <button class="close-btn" onclick="closeResultModal()"><span class="lang-zh">确定 (Enter)</span><span class="lang-en">OK (Enter)</span></button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="poolModal">
+        <div class="modal-content">
+            <h2 id="poolCountTitle">--</h2>
+            <div id="poolContent" style="margin-bottom: 30px;"></div>
+            <button class="close-btn" style="background:#718096;" onclick="closePoolModal()"><span class="lang-zh">关闭 (Esc)</span><span class="lang-en">Close (Esc)</span></button>
+        </div>
+    </div>
+
+    <div class="modal" id="imageModal">
+        <div class="modal-content">
+            <h2 style="color: var(--display-text); margin: 0 0 20px 0; font-size: 28px;">
+                <span class="lang-zh">🖼️ 奖品大图预览</span><span class="lang-en">🖼️ Image Preview</span>
+            </h2>
+            <img id="largePreviewImg" src="">
+            <div id="imageModalPrizeInfo"></div>
+            <button class="close-btn" style="margin-top: 25px; background: #718096;" onclick="closeImageModal()"><span class="lang-zh">关闭 (Esc)</span><span class="lang-en">Close (Esc)</span></button>
+        </div>
+    </div>
+
+    <script>
+        // ================= 0. 全局统一配置 =================
+        const SYS_CONFIG = {
+            version: "v3.2.0",
+            tag: "", 
+            
+            imageCompression: {
+                maxWidth: 700,   
+                maxHeight: 700,  
+                quality: 0.90    
+            },
+
+            zh: {
+                mainTitle: "🍿 专业级抽奖终端 v3 🍿",
+                subTitle: "—— [在此替换您的名称] ——",
+                footerOrg: "[此处可替换主办方名称]"
+            },
+            en: {
+                mainTitle: "🍿 Lottery Pro v3 Terminal 🍿",
+                subTitle: "—— [Replace With Your Event Name] ——",
+                footerOrg: "[Your Organization]"
+            }
+        };
+
+        // ================= 1. 全局状态 =================
+        let timer = null;          
+        let isRunning = false;     
+        let drawCount = 0;         
+        let globalDrawnHistory = []; 
+        let currentPool = [];      
+        let globalAuditLogs = [];
+        let currentImageBase64 = null;
+        let isMusicPlaying = false;
+        let musicQueue = [];
+        let currentMusicIndex = 0;
+        let currentLang = 'zh';
+        let currentStars = 0;
+        let isSettling = false; 
+        
+        let sfxFileUrl = ''; 
+
+        let isCustomPool = false;
+        let rawCustomPoolOrigin = []; 
+        let customPoolOrigin = []; 
+        let customPoolExcluded = []; 
+        let presets = [];
+        let activePresetId = null;
+        let prePresetState = null;
+
+        let lastMin = document.getElementById('minNum').value;
+        let lastMax = document.getElementById('maxNum').value;
+        let lastBatch = document.getElementById('batchNum').value;
+        let lastExclude = document.getElementById('excludeNum').value.trim();
+        let lastPrizeNote = '';
+
+        // ================= 2. 多语言系统 =================
+        const i18n = {
+            zh: {
+                musicOn: '音乐: 开', musicOff: '音乐: 关',
+                sys: '系统', conf: '配置', tip: '提示',
+                round: '第 {n} 轮',
+                poolEmpty: '⚠️ 当前候选池已空，无法继续抽奖！',
+                poolHuge: '⚠️ 候选池数据量过大（共 {n} 个独立对象）<br><span>暂不提供完整明细预览。</span>',
+                poolTitle: '当前剩余候选池：{n} 个',
+                alertMinMax: '起始号码必须小于截止号码！',
+                alertBatch: '单次抽取人数异常！',
+                alertLack: '候选池不足！当前剩余可用: {n} 个。',
+                alertReset: '确定要重置数据并清空所有已中奖记录吗？',
+                alertFormat: '排除名单格式异常，请重新检查！',
+                alertRange: '排除名单范围错误！',
+                alertPositive: '必须是正整数！',
+                btnStart: '开始抽奖', btnStop: '🛑 停止抽奖',
+                posterPrompt: '你想生成最近几轮有效中奖记录的海报？(输入数字)',
+                posterNoData: '暂无有效记录可供生成海报！',
+                on: '开启', off: '关闭',
+                logReset: '已复位系统数据。当前余量/总量：{rem}/{tot}',
+                logRange: '将范围修改为: {min} - {max} (余量/总量: {rem}/{tot})',
+                logExclude: '将排除名单变更为: {val} (余量/总量: {rem}/{tot})',
+                logNoRepeat: '已{status}不重复模式 (余量/总量: {rem}/{tot})',
+                logPrize: '即将开始抽取：{val}！',
+                logExcludeClear: '已清空排除名单 (余量/总量: {rem}/{tot})',
+                logPool: '(本次抽取: {batch} | 候选池剩余: {rem}/{tot})',
+                varTitle: '【离散度校验】实际方差 / 理论方差。非纯数字模式下无效。',
+                oeTitle: '【均衡度校验】奇数与偶数的占比。非纯数字模式下无效。',
+                hmTitle: '【随机性热力】各区间中签比例。非纯数字模式下无效。',
+                secLow: '低位区', secMid: '中位区', secHigh: '高位区',
+                stateRestore: '检测到未完成的抽奖进度，是否恢复历史记录？\n(取消将清空上次进度)',
+                invalidateTip: '作废',
+                restoreTip: '恢复',
+                logInvalidated: '第 {n} 轮已作废，数据 [{nums}] 已重返候选池',
+                logRestored: '第 {n} 轮已恢复，数据 [{nums}] 已重新生效',
+                invalidateConfirm: '确认作废本轮抽奖吗？\n作废后数据将重置回候选池供下次抽取！',
+                restoreConfirm: '确认恢复本轮抽奖记录吗？\n恢复后，该轮数据将重新计入有效历史！',
+                themeDark: '🌙 影院模式', themeLight: '☀️ 明亮模式',
+                starTip: '点击星星点亮，再次点击取消',
+                posterTitle: '🎉 抽奖结果公示 🎉',
+                posterSub: '— 恭喜各位幸运儿 —',
+                uploadTip: '上传图片 (支持拖拽) / Upload Image\n(受限于浏览器本地缓存，≤1MB GIF保留动效，其余高清压缩)',
+                alertPresetMax: '预设项最多只允许保留 20 个！请先删除不需要的预设。',
+                logPresetAdd: '已成功添加预设：{name}',
+                logPresetDel: '已删除预设',
+                logListImport: '已成功载入自定义名单。',
+                logListClear: '已退出自定义名单模式，恢复数字区间模式。'
+            },
+            en: {
+                musicOn: 'BGM: ON', musicOff: 'BGM: OFF',
+                sys: 'SYS', conf: 'CONF', tip: 'TIP',
+                round: 'Round {n}',
+                poolEmpty: '⚠️ Candidate pool is empty!',
+                poolHuge: '⚠️ Candidate pool is too large ({n} items)<br><span>Preview is disabled for performance.</span>',
+                poolTitle: 'Current Available Candidates: {n}',
+                alertMinMax: 'Start Num must be less than End Num!',
+                alertBatch: 'Invalid batch size!',
+                alertLack: 'Insufficient candidates! Remaining: {n}.',
+                alertReset: 'Are you sure you want to reset data and clear all history?',
+                alertFormat: 'Invalid format in excludes list!',
+                alertRange: 'Invalid range in excludes list!',
+                alertPositive: 'Must be a positive integer!',
+                btnStart: 'START DRAW', btnStop: '🛑 STOP DRAW',
+                posterPrompt: 'How many recent valid rounds do you want to include in the poster? (Enter number)',
+                posterNoData: 'No valid records available to generate poster!',
+                on: 'Enabled', off: 'Disabled',
+                logReset: 'System reset. Remaining/Total: {rem}/{tot}',
+                logRange: 'Range modified: {min} - {max} (Remaining/Total: {rem}/{tot})',
+                logExclude: 'Excludes updated: {val} (Remaining/Total: {rem}/{tot})',
+                logNoRepeat: 'No-Repeat mode {status} (Remaining/Total: {rem}/{tot})',
+                logPrize: 'Ready to draw: {val}!',
+                logExcludeClear: 'Excludes cleared (Remaining/Total: {rem}/{tot})',
+                logPool: '({batch} drawn | Remaining: {rem}/{tot})',
+                varTitle: '[Variance] Actual / Theoretical. N/A for non-numeric lists.',
+                oeTitle: '[Odd/Even] Ratio. N/A for non-numeric lists.',
+                hmTitle: '[Heatmap] Ratio. N/A for non-numeric lists.',
+                secLow: 'Low Sec', secMid: 'Mid Sec', secHigh: 'High Sec',
+                stateRestore: 'Unfinished session detected. Restore history?\n(Cancel to clear data)',
+                invalidateTip: 'Invalidate',
+                restoreTip: 'Restore',
+                logInvalidated: 'Round {n} invalidated. [{nums}] returned to candidate pool.',
+                logRestored: 'Round {n} restored. [{nums}] re-registered.',
+                invalidateConfirm: 'Are you sure you want to invalidate this round?\nData will return to the candidate pool!',
+                restoreConfirm: 'Are you sure to restore this round? Data will be valid again.',
+                themeDark: '🌙 Cinema Mode', themeLight: '☀️ Light Mode',
+                starTip: 'Click to rate, click again to clear',
+                posterTitle: '🎉 WINNERS ANNOUNCEMENT 🎉',
+                posterSub: '— Congratulations —',
+                uploadTip: 'Upload Image (Drop supported)\n(Due to browser storage limits: ≤1MB GIFs remain animated, others HD compressed)',
+                alertPresetMax: 'Maximum 20 presets allowed! Please delete some first.',
+                logPresetAdd: 'Preset added: {name}',
+                logPresetDel: 'Preset deleted',
+                logListImport: 'Custom list imported successfully.',
+                logListClear: 'Custom list mode exited. Number range restored.'
