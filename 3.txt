@@ -1,80 +1,15 @@
-        setupNumberInput('batchNum', () => lastBatch, (v) => lastBatch = v, false);
 
-        const excludeEl = document.getElementById('excludeNum');
-        excludeEl.addEventListener('blur', function() {
-            let val = this.value.replace(/\n/g, ' ').trim(); 
-            if (!val) { 
-                this.value = ''; 
-                if (lastExclude !== '') { 
-                    lastExclude = ''; updateStatsBoard(); const stats=getPoolStats(); 
-                    addSettingRecord(t('logExcludeClear', {rem: stats.remaining, tot: stats.total})); saveState();
-                } 
-                return; 
-            }
-            
-            const parts = val.split(/[,，]/); let valid = []; let err = false; let rngErr = false;
-            for (let part of parts) {
-                const trim = part.trim(); if (trim === '') continue; 
-                if (trim.includes('-') && !isCustomPool) { 
-                    const r = trim.split('-'); if (r.length !== 2) { err = true; break; }
-                    if (!validatePositiveInt(r[0].trim()) || !validatePositiveInt(r[1].trim())) { err = true; break; }
-                    const a = Number(r[0].trim()); const b = Number(r[1].trim());
-                    if (a > b) { rngErr = true; break; }
-                    for (let i = a; i <= b; i++) valid.push(i);
-                } else {
-                    if(!isCustomPool && !validatePositiveInt(trim)) { err = true; break; }
-                    valid.push(isCustomPool ? trim : Number(trim));
-                }
-            }
-            if (rngErr) { alert(t('alertRange')); this.value = lastExclude; return; }
-            if (err) { alert(t('alertFormat')); this.value = lastExclude; return; }
-            
-            if(isCustomPool) { valid = [...new Set(valid)]; } 
-            else { valid = [...new Set(valid)].sort((a, b) => a - b); }
-            
-            const newVal = valid.join(', '); this.value = newVal;
-            if (lastExclude !== newVal) { lastExclude = newVal; updateStatsBoard(); const stats = getPoolStats(); addSettingRecord(t('logExclude', {val: newVal, rem: stats.remaining, tot: stats.total})); saveState();}
-        });
-        excludeEl.addEventListener('keydown', function(e) { if (e.key === 'Enter') { e.preventDefault(); this.blur(); } });
-
-        document.getElementById('noRepeat').addEventListener('change', (e) => { updateStatsBoard(); const stats = getPoolStats(); addSettingRecord(t('logNoRepeat', {status: e.target.checked ? t('on') : t('off'), rem: stats.remaining, tot: stats.total})); saveState(); });
-        
-        document.getElementById('prizeNote').addEventListener('blur', function(e) { 
-            const val = e.target.value.trim(); 
-            if (val !== lastPrizeNote) {
-                lastPrizeNote = val;
-                saveState();
-                checkAndSaveActivePreset(); 
-            }
-        });
-        document.getElementById('prizeNote').addEventListener('keydown', function(e) { if (e.key === 'Enter') { e.preventDefault(); this.blur(); } });
-
-        const starElements = document.querySelectorAll('.star-rating .star');
-        function renderStars(count) { starElements.forEach((s, i) => { s.textContent = '★'; s.style.color = i < count ? '#f59e0b' : 'var(--border-color)'; s.style.textShadow = i < count ? '0 2px 5px rgba(245,158,11,0.3)' : 'none'; }); }
-        starElements.forEach(star => {
-            star.addEventListener('mouseover', function() { renderStars(parseInt(this.getAttribute('data-value'))); });
-            star.addEventListener('mouseout', function() { renderStars(currentStars); });
-            star.addEventListener('click', function(e) {
-                const val = parseInt(this.getAttribute('data-value'));
-                if (currentStars !== val) { currentStars = val; createStarParticles(e.clientX, e.clientY); } else { currentStars = 0; }
-                renderStars(currentStars); 
-                saveState();
-                checkAndSaveActivePreset(); 
-            });
-        });
-
-        function updateClock() {
-            const now = new Date(); const y = now.getFullYear(); const m = String(now.getMonth()+1).padStart(2,'0'); const d = String(now.getDate()).padStart(2,'0');
-            const hh = String(now.getHours()).padStart(2,'0'); const mm = String(now.getMinutes()).padStart(2,'0'); const ss = String(now.getSeconds()).padStart(2,'0');
-            document.getElementById('sysClock').textContent = `${y}-${m}-${d} ${hh}:${mm}:${ss}`; return `${y}-${m}-${d} ${hh}:${mm}:${ss}`; 
+        function isAnyModalOpen() { 
+            const rm = document.getElementById('resultModal');
+            const pm = document.getElementById('poolModal');
+            const im = document.getElementById('imageModal');
+            return (rm && rm.style.display === 'flex') || (pm && pm.style.display === 'flex') || (im && im.style.display === 'flex'); 
         }
-        setInterval(updateClock, 1000); 
-
-        function isAnyModalOpen() { return document.getElementById('resultModal').style.display === 'flex' || document.getElementById('poolModal').style.display === 'flex' || document.getElementById('imageModal').style.display === 'flex'; }
         
         document.addEventListener('keydown', function(event) {
             if (event.key === 'Enter') {
-                if (document.getElementById('resultModal').style.display === 'flex') {
+                const rm = document.getElementById('resultModal');
+                if (rm && rm.style.display === 'flex') {
                     event.preventDefault(); closeResultModal(); return;
                 }
             }
@@ -84,7 +19,11 @@
             if (event.code === 'Space') {
                 event.preventDefault();
                 if (isAnyModalOpen() || isSettling) return; 
-                const btnRect = document.getElementById('controlBtn').getBoundingClientRect(); createButtonParticles(btnRect.left + btnRect.width/2, btnRect.top + btnRect.height/2);
+                const cBtn = document.getElementById('controlBtn');
+                if(cBtn) {
+                    const btnRect = cBtn.getBoundingClientRect(); 
+                    createButtonParticles(btnRect.left + btnRect.width/2, btnRect.top + btnRect.height/2);
+                }
                 toggleDraw();
             } else if (event.code === 'KeyD') { event.preventDefault(); toggleTheme();
             } else if (event.code === 'KeyF') { event.preventDefault(); toggleFullscreen();
@@ -111,15 +50,18 @@
                 p.animate([ { transform: 'translate(-50%, -50%) scale(1) rotate(0deg)', opacity: 1 }, { transform: `translate(calc(-50% + ${Math.cos(angle)*v}px), calc(-50% + ${Math.sin(angle)*v-40}px)) scale(0) rotate(${Math.random()*360+180}deg)`, opacity: 0 } ], { duration: Math.random()*500+400, easing: 'cubic-bezier(0.25, 1, 0.5, 1)' }).onfinish = () => p.remove();
             }
         }
-        const confettiCanvas = document.getElementById('confettiCanvas'); const ctx = confettiCanvas.getContext('2d'); let confettiActive = false; let confettiParticles = [];
+        const confettiCanvas = document.getElementById('confettiCanvas'); 
+        let ctx = null; if(confettiCanvas) ctx = confettiCanvas.getContext('2d'); 
+        let confettiActive = false; let confettiParticles = [];
         function fireConfettiEngine() {
+            if(!confettiCanvas || !ctx) return;
             confettiCanvas.width = window.innerWidth; confettiCanvas.height = window.innerHeight; confettiCanvas.style.display = 'block'; confettiParticles = [];
             const colors = ['#e53e3e', '#f56565', '#d69e2e', '#fbbf24', '#38a169', '#3182ce', '#805ad5', '#ec4899'];
             for(let i=0; i<350; i++) confettiParticles.push({ x: Math.random()*confettiCanvas.width, y: Math.random()*-confettiCanvas.height*1.5, vx: (Math.random()-0.5)*2, vy: Math.random()*3+2, size: Math.random()*12+6, color: colors[Math.floor(Math.random()*colors.length)], rotation: Math.random()*360, rotationSpeed: (Math.random()-0.5)*5, shape: Math.random()>0.5?'rect':'circle', wobbleSpeed: Math.random()*0.05+0.02, wobbleAngle: Math.random()*Math.PI*2 });
             if(!confettiActive) { confettiActive = true; renderConfetti(); }
         }
         function renderConfetti() {
-            if(!confettiActive) return; ctx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height); let active = 0;
+            if(!confettiActive || !ctx) return; ctx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height); let active = 0;
             confettiParticles.forEach(p => {
                 p.wobbleAngle += p.wobbleSpeed; p.x += Math.sin(p.wobbleAngle)*1.5; p.y += p.vy; p.rotation += p.rotationSpeed;
                 if (p.y < confettiCanvas.height + 50) active++; ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rotation*Math.PI/180); ctx.fillStyle = p.color;
@@ -128,6 +70,7 @@
             if(active > 0) requestAnimationFrame(renderConfetti); else { confettiActive = false; ctx.clearRect(0,0,confettiCanvas.width,confettiCanvas.height); confettiCanvas.style.display = 'none'; }
         }
 
+        // ================= 13. 核心抽奖随机数与池余量计算 =================
         function getSecureRandom(min, max) {
             const range = max - min + 1; const maxValid = 4294967295 - (4294967295 % range); 
             let randomArray = new Uint32Array(1); let randomValue;
@@ -136,7 +79,8 @@
         }
         
         function getPoolStats() {
-            const noRepeat = document.getElementById('noRepeat').checked;
+            const noRepeatEl = document.getElementById('noRepeat');
+            const noRepeat = noRepeatEl ? noRepeatEl.checked : true;
             let excludes = [];
             
             if (isCustomPool) {
@@ -153,7 +97,8 @@
                 return { total, remaining, excludes, min: null, max: null, theoryMean: '--', theoryVariance: '--' };
                 
             } else {
-                const excludeStr = document.getElementById('excludeNum').value;
+                const excludeEl = document.getElementById('excludeNum');
+                const excludeStr = excludeEl ? excludeEl.value : '';
                 excludeStr.split(/[,，]/).forEach(part => {
                     let trim = part.trim();
                     if(!trim) return;
@@ -167,8 +112,10 @@
 
                 let total = 0, remaining = 0, theorySum = 0; 
                 let validInit = [];
-                const min = parseInt(document.getElementById('minNum').value) || 1; 
-                const max = parseInt(document.getElementById('maxNum').value) || 100;
+                const minEl = document.getElementById('minNum');
+                const maxEl = document.getElementById('maxNum');
+                const min = minEl ? parseInt(minEl.value) || 1 : 1; 
+                const max = maxEl ? parseInt(maxEl.value) || 100 : 100;
                 
                 for (let i = min; i <= max; i++) {
                     if (!excludes.includes(i)) { total++; theorySum += i; validInit.push(i); if (noRepeat) { if (!globalDrawnHistory.includes(i)) remaining++; } else { remaining++; } }
@@ -179,7 +126,11 @@
         }
 
         function updateStatsBoard() {
-            const stats = getPoolStats(); document.getElementById('poolSizeVal').textContent = `${stats.remaining}/${stats.total}`; document.getElementById('theoryMean').textContent = stats.theoryMean;
+            const stats = getPoolStats(); 
+            const psv = document.getElementById('poolSizeVal');
+            const tm = document.getElementById('theoryMean');
+            if(psv) psv.textContent = `${stats.remaining}/${stats.total}`; 
+            if(tm) tm.textContent = stats.theoryMean;
             
             if (isCustomPool) {
                 const alertCountEl = document.getElementById('customPoolAlertCount');
@@ -188,255 +139,118 @@
 
             let len = globalDrawnHistory.length;
             if (len === 0 || isCustomPool) { 
-                document.getElementById('actualMean').textContent = '--'; 
-                document.getElementById('varianceVal').innerHTML = `<span class="empty-text">--</span>`;
-                document.getElementById('oddEvenVal').innerHTML = `<span class="empty-text">--</span>`; 
-                document.getElementById('heatmapVal').innerHTML = `<span class="empty-text">--</span>`;
+                const am = document.getElementById('actualMean');
+                const vv = document.getElementById('varianceVal');
+                const oev = document.getElementById('oddEvenVal');
+                const hmv = document.getElementById('heatmapVal');
+                if(am) am.textContent = '--'; 
+                if(vv) vv.innerHTML = `<span class="empty-text">--</span>`;
+                if(oev) oev.innerHTML = `<span class="empty-text">--</span>`; 
+                if(hmv) hmv.innerHTML = `<span class="empty-text">--</span>`;
                 return;
             }
-            const actualMean = globalDrawnHistory.reduce((a,b)=>a+b,0) / len; document.getElementById('actualMean').textContent = actualMean.toFixed(2);
+            const actualMean = globalDrawnHistory.reduce((a,b)=>a+b,0) / len; 
+            const am = document.getElementById('actualMean');
+            if(am) am.textContent = actualMean.toFixed(2);
             let actualVar = len > 1 ? globalDrawnHistory.reduce((a,b)=>a+Math.pow(b-actualMean,2),0)/len : 0;
-            document.getElementById('varianceVal').innerHTML = `<span style="color:var(--highlight-text); font-size:14px;">${actualVar.toFixed(1)}</span> <span style="color:var(--text-light);font-weight:normal;font-size:14px;">/ ${stats.theoryVariance}</span>`;
+            const vv = document.getElementById('varianceVal');
+            if(vv) vv.innerHTML = `<span style="color:var(--highlight-text); font-size:14px;">${actualVar.toFixed(1)}</span> <span style="color:var(--text-light);font-weight:normal;font-size:14px;">/ ${stats.theoryVariance}</span>`;
             
             let odd = 0; globalDrawnHistory.forEach(n => n%2!==0 && odd++); let oddPct = Math.round((odd/len)*100);
-            document.getElementById('oddEvenVal').innerHTML = `<span class="badge bg-odd">${currentLang==='zh'?'奇':'Odd'} ${oddPct}%</span> <span class="badge bg-even">${currentLang==='zh'?'偶':'Even'} ${100-oddPct}%</span>`;
+            const oev = document.getElementById('oddEvenVal');
+            if(oev) oev.innerHTML = `<span class="badge bg-odd">${currentLang==='zh'?'奇':'Odd'} ${oddPct}%</span> <span class="badge bg-even">${currentLang==='zh'?'偶':'Even'} ${100-oddPct}%</span>`;
 
             let range = stats.max - stats.min;
-            if(range===0) document.getElementById('heatmapVal').innerHTML = `<span class="empty-text">-</span>`;
-            else {
+            const hmv = document.getElementById('heatmapVal');
+            if(range===0 && hmv) hmv.innerHTML = `<span class="empty-text">-</span>`;
+            else if(hmv) {
                 let low = 0, mid = 0; let t1 = stats.min + range/3; let t2 = stats.min + 2*range/3;
                 globalDrawnHistory.forEach(n => { if(n<=t1) low++; else if(n<=t2) mid++; });
                 let lowPct = Math.round(low/len*100); let midPct = Math.round(mid/len*100);
-                document.getElementById('heatmapVal').innerHTML = `<span class="badge bg-low" title="${t('secLow')}">${lowPct}%</span> <span class="badge bg-mid" title="${t('secMid')}">${midPct}%</span> <span class="badge bg-high" title="${t('secHigh')}">${100-lowPct-midPct}%</span>`;
+                hmv.innerHTML = `<span class="badge bg-low" title="${t('secLow')}">${lowPct}%</span> <span class="badge bg-mid" title="${t('secMid')}">${midPct}%</span> <span class="badge bg-high" title="${t('secHigh')}">${100-lowPct-midPct}%</span>`;
             }
         }
 
         function performSilentReset() { 
             globalDrawnHistory = []; 
             drawCount = 0; 
-            document.getElementById('numberDisplay').innerHTML = "?"; 
+            const nd = document.getElementById('numberDisplay');
+            if(nd) nd.innerHTML = "?"; 
             updateStatsBoard(); 
         }
-        
-        function resetPoolWithPrompt() { 
-            if (isRunning) return; 
-            if (!confirm(t('alertReset'))) return; 
-            
-            document.getElementById('excludeNum').value = '';
-            lastExclude = '';
-            
-            performSilentReset(); 
-            const stats = getPoolStats(); 
-            addSystemRecord(t('logReset', {rem: stats.remaining, tot: stats.total})); 
-            saveState();
+
+        // ================= 14. 抽奖生命周期流转 (Start/Stop) =================
+        const controlBtn = document.getElementById('controlBtn');
+        if(controlBtn) {
+            controlBtn.addEventListener('click', function(e) { 
+                if(isAnyModalOpen() || isSettling) return; 
+                createButtonParticles(e.clientX, e.clientY); 
+                toggleDraw(); 
+            });
         }
 
-        window.toggleInvalidate = function(internalId, rawNums) {
-            let logEntry = globalAuditLogs.find(l => l.internalId === internalId);
-            if (!logEntry) return;
-
-            let nums = [];
-            let numsStr = '';
-            if (Array.isArray(rawNums)) {
-                nums = isCustomPool ? rawNums.map(String) : rawNums.map(n => parseInt(n, 10));
-                numsStr = nums.join(', ');
-            } else if (typeof rawNums === 'string') {
-                nums = isCustomPool ? rawNums.split(',').map(n => n.trim()) : rawNums.split(',').map(n => parseInt(n.trim(), 10));
-                numsStr = rawNums;
-            } else if (typeof rawNums === 'number') {
-                nums = [isCustomPool ? String(rawNums) : rawNums];
-                numsStr = String(rawNums);
-            }
-
-            if (!logEntry.invalidated) {
-                if (!confirm(t('invalidateConfirm'))) return;
-                nums.forEach(n => { const idx = globalDrawnHistory.indexOf(n); if(idx > -1) globalDrawnHistory.splice(idx, 1); });
-                logEntry.invalidated = true; 
+        const numDispEl = document.getElementById('numberDisplay');
+        if(numDispEl) {
+            numDispEl.addEventListener('dblclick', function() {
+                if (isRunning) return; 
+                const stats = getPoolStats(); const poolContent = document.getElementById('poolContent'); 
+                const nrEl = document.getElementById('noRepeat');
+                const noRepeat = nrEl ? nrEl.checked : true;
+                let currentAvailable = [];
                 
-                if (logEntry.presetId) {
-                    let p = presets.find(x => x.id === logEntry.presetId);
-                    if (p) {
-                        p.drawn = false;
-                        if (activePresetId !== p.id) {
-                            if (activePresetId) {
-                                checkAndSaveActivePreset();
-                            } else {
-                                prePresetState = {
-                                    note: document.getElementById('prizeNote').value.trim(),
-                                    batch: document.getElementById('batchNum').value,
-                                    stars: currentStars,
-                                    image: currentImageBase64
-                                };
-                            }
-                            loadPreset(p.id);
-                        } else {
-                            renderPresets();
-                        }
+                if (isCustomPool) {
+                    customPoolOrigin.forEach(item => {
+                        if (stats.excludes.includes(String(item))) return;
+                        if (noRepeat && globalDrawnHistory.includes(item)) return;
+                        currentAvailable.push(item);
+                    });
+                } else {
+                    for (let i = stats.min; i <= stats.max; i++) {
+                        if (stats.excludes.includes(i)) continue;
+                        if (noRepeat && globalDrawnHistory.includes(i)) continue;
+                        currentAvailable.push(i);
                     }
                 }
+
+                const count = currentAvailable.length; 
+                const pct = document.getElementById('poolCountTitle');
+                if(pct) pct.innerHTML = t('poolTitle', {n: count});
+                if(!poolContent) return;
+
+                if (count === 0) { 
+                    poolContent.innerHTML = `<div class="pool-empty">${t('poolEmpty')}</div>`; 
+                } else if (count <= 100) { 
+                    poolContent.innerHTML = `<div style="max-height:400px;overflow-y:auto;text-align:left;padding:10px;">` + 
+                        currentAvailable.map(n => `
+                            <div class="pool-badge-wrapper">
+                                <span class="pool-badge">${n}</span>
+                                <button class="pool-badge-del" onclick="removeCandidateFromPreview('${String(n).replace(/'/g, "\\'")}')" title="从号池移除">×</button>
+                            </div>
+                        `).join('') + `</div>`;
+                } 
+                else if (count <= 1000) { poolContent.innerHTML = `<div class="pool-text-view">${currentAvailable.join(', ')}</div>`; } 
+                else { poolContent.innerHTML = `<div class="pool-huge">${t('poolHuge', {n:count})}</div>`; }
                 
-                const row = document.getElementById('hist-row-' + internalId); if (row) row.classList.add('invalidated');
-                const btn = document.getElementById('btn-invalid-' + internalId);
-                if (btn) { btn.innerText = currentLang === 'zh' ? '恢复' : 'Restore'; btn.classList.add('restore-btn'); btn.title = currentLang === 'zh' ? '恢复' : 'Restore'; }
-                
-                updateStatsBoard(); addSystemRecord(t('logInvalidated', {n: logEntry.round.replace('Round ',''), nums: numsStr})); saveState();
-            } else {
-                if (!confirm(t('restoreConfirm'))) return;
-                globalDrawnHistory.push(...nums); 
-                logEntry.invalidated = false; 
-                
-                if (logEntry.presetId) {
-                    let p = presets.find(x => x.id === logEntry.presetId);
-                    if (p) {
-                        p.drawn = true;
-                        if (activePresetId === p.id) {
-                            activePresetId = null;
-                            rollbackToPrePresetState();
-                        }
-                        renderPresets();
-                    }
-                }
-                
-                const row = document.getElementById('hist-row-' + internalId); if (row) row.classList.remove('invalidated');
-                const btn = document.getElementById('btn-invalid-' + internalId);
-                if (btn) { btn.innerText = currentLang === 'zh' ? '作废' : 'Invalidate'; btn.classList.remove('restore-btn'); btn.title = currentLang === 'zh' ? '作废' : 'Invalidate'; }
-                
-                updateStatsBoard(); addSystemRecord(t('logRestored', {n: logEntry.round.replace('Round ',''), nums: numsStr})); saveState();
-            }
-        };
-
-        window.cancelExclusion = function(internalId, itemStr) {
-            if (isRunning) return;
-            let logEntry = globalAuditLogs.find(l => l.internalId === internalId);
-            if (!logEntry || logEntry.invalidated) return;
-
-            if (isCustomPool) {
-                const idx = customPoolExcluded.indexOf(String(itemStr));
-                if (idx > -1) customPoolExcluded.splice(idx, 1);
-            }
-
-            logEntry.invalidated = true;
-
-            const row = document.getElementById('hist-row-' + internalId);
-            if (row) row.classList.add('invalidated');
-            
-            const btn = document.getElementById('btn-cancel-' + internalId);
-            if (btn) btn.style.display = 'none';
-
-            updateStatsBoard();
-            saveState();
-        };
-
-        window.removeCandidateFromPreview = function(item) {
-            if (isCustomPool) {
-                if (!customPoolExcluded.includes(String(item))) {
-                    customPoolExcluded.push(String(item));
-                    updateStatsBoard();
-                    const stats = getPoolStats();
-                    const internalId = Date.now() + Math.floor(Math.random() * 10000);
-                    const timeStr = updateClock();
-                    const msg = currentLang === 'zh' ? 
-                        `[透视管理] 从号池手动剔除: ${item}` : 
-                        `[Preview] Excluded manually: ${item}`;
-
-                    globalAuditLogs.push({ internalId: internalId, time: timeStr, type: 'Conf', round: '-', content: msg, prize: '-', stars: '-', poolInfo: `${stats.remaining}/${stats.total}`, image: null, invalidated: false, excludedItem: String(item) });
-
-                    const cancelText = currentLang === 'zh' ? '取消' : 'Cancel';
-                    const li = document.createElement('li');
-                    li.className = 'history-item';
-                    li.id = `hist-row-${internalId}`;
-                    li.style.cssText = "background:var(--conf-log-bg); border-radius:8px; padding:10px 5px; margin-top:5px;";
-                    li.innerHTML = `
-                        <div class="item-col-left" style="color:#38a169;font-size:14px;padding-left:10px;">[${t('conf')}]</div>
-                        <div class="item-col-middle" style="align-items:flex-end; min-width:0;">
-                            <div class="exclude-log-text" style="color:#2f855a;font-size:14px;text-align:right; word-break: break-all; white-space: normal; line-height: 1.5;">${msg}</div>
-                            <div class="pool-info">(余量: ${stats.remaining})</div>
-                        </div>
-                        <div class="item-col-right" style="padding-right:10px;">
-                            <span>${timeStr.replace(' ','<br>')}</span>
-                            <button class="invalid-btn" id="btn-cancel-${internalId}" onclick="cancelExclusion(${internalId}, '${String(item).replace(/'/g, "\\'")}')" title="${cancelText}">${cancelText}</button>
-                        </div>`;
-
-                    document.getElementById('historyList').insertBefore(li, document.getElementById('historyList').firstChild);
-
-                    saveState();
-                    document.getElementById('numberDisplay').dispatchEvent(new Event('dblclick'));
-                }
-            } else {
-                const excludeEl = document.getElementById('excludeNum');
-                let currentExcludes = excludeEl.value.split(/[,，]/).map(s => s.trim()).filter(s => s !== '');
-                
-                if(!currentExcludes.includes(String(item))) {
-                    currentExcludes.push(String(item));
-                    excludeEl.value = currentExcludes.join(', ');
-                    lastExclude = excludeEl.value; 
-                    
-                    updateStatsBoard();
-                    const stats = getPoolStats();
-                    
-                    addSettingRecord(currentLang === 'zh' ? 
-                        `[透视管理] 从号池手动剔除: ${item} (余量: ${stats.remaining})` : 
-                        `[Preview] Excluded manually: ${item} (Rem: ${stats.remaining})`);
-                    
-                    saveState();
-                    document.getElementById('numberDisplay').dispatchEvent(new Event('dblclick'));
-                }
-            }
-        };
-
-        document.getElementById('controlBtn').addEventListener('click', function(e) { 
-            if(isAnyModalOpen() || isSettling) return; 
-            createButtonParticles(e.clientX, e.clientY); 
-            toggleDraw(); 
-        });
-
-        document.getElementById('numberDisplay').addEventListener('dblclick', function() {
-            if (isRunning) return; 
-            const stats = getPoolStats(); const poolContent = document.getElementById('poolContent'); const noRepeat = document.getElementById('noRepeat').checked;
-            let currentAvailable = [];
-            
-            if (isCustomPool) {
-                customPoolOrigin.forEach(item => {
-                    if (stats.excludes.includes(String(item))) return;
-                    if (noRepeat && globalDrawnHistory.includes(item)) return;
-                    currentAvailable.push(item);
-                });
-            } else {
-                for (let i = stats.min; i <= stats.max; i++) {
-                    if (stats.excludes.includes(i)) continue;
-                    if (noRepeat && globalDrawnHistory.includes(i)) continue;
-                    currentAvailable.push(i);
-                }
-            }
-
-            const count = currentAvailable.length; document.getElementById('poolCountTitle').innerHTML = t('poolTitle', {n: count});
-            if (count === 0) { 
-                poolContent.innerHTML = `<div class="pool-empty">${t('poolEmpty')}</div>`; 
-            } else if (count <= 100) { 
-                poolContent.innerHTML = `<div style="max-height:400px;overflow-y:auto;text-align:left;padding:10px;">` + 
-                    currentAvailable.map(n => `
-                        <div class="pool-badge-wrapper">
-                            <span class="pool-badge">${n}</span>
-                            <button class="pool-badge-del" onclick="removeCandidateFromPreview('${String(n).replace(/'/g, "\\'")}')" title="从号池移除">×</button>
-                        </div>
-                    `).join('') + `</div>`;
-            } 
-            else if (count <= 1000) { poolContent.innerHTML = `<div class="pool-text-view">${currentAvailable.join(', ')}</div>`; } 
-            else { poolContent.innerHTML = `<div class="pool-huge">${t('poolHuge', {n:count})}</div>`; }
-            
-            document.getElementById('poolModal').style.display = 'flex';
-        });
+                const pm = document.getElementById('poolModal');
+                if(pm) pm.style.display = 'flex';
+            });
+        }
 
         function toggleDraw() {
             if (isAnyModalOpen() || isSettling) return;
             const pInput = document.getElementById('prizeNote'); const eInput = document.getElementById('excludeNum');
 
             if (!isRunning) {
-                if (!pInput.value) pInput.classList.add('hide-placeholder'); if (!eInput.value) eInput.classList.add('hide-placeholder');
-                const stats = getPoolStats(); const batch = parseInt(document.getElementById('batchNum').value); const noRepeat = document.getElementById('noRepeat').checked;
+                if (pInput && !pInput.value) pInput.classList.add('hide-placeholder'); 
+                if (eInput && !eInput.value) eInput.classList.add('hide-placeholder');
+                const stats = getPoolStats(); 
+                const bEl = document.getElementById('batchNum');
+                const batch = bEl ? parseInt(bEl.value) : 1; 
+                const nrEl = document.getElementById('noRepeat');
+                const noRepeat = nrEl ? nrEl.checked : true;
                 
-                if (!isCustomPool && (isNaN(stats.min) || isNaN(stats.max) || stats.min > stats.max)) { alert(t('alertMinMax')); pInput.classList.remove('hide-placeholder'); eInput.classList.remove('hide-placeholder'); return; }
-                if (isNaN(batch) || batch <= 0) { alert(t('alertBatch')); pInput.classList.remove('hide-placeholder'); eInput.classList.remove('hide-placeholder'); return; }
+                if (!isCustomPool && (isNaN(stats.min) || isNaN(stats.max) || stats.min > stats.max)) { alert(t('alertMinMax')); if(pInput) pInput.classList.remove('hide-placeholder'); if(eInput) eInput.classList.remove('hide-placeholder'); return; }
+                if (isNaN(batch) || batch <= 0) { alert(t('alertBatch')); if(pInput) pInput.classList.remove('hide-placeholder'); if(eInput) eInput.classList.remove('hide-placeholder'); return; }
                 
                 currentPool = [];
                 if (isCustomPool) {
@@ -447,15 +261,24 @@
                     for (let i = stats.min; i <= stats.max; i++) { if (!stats.excludes.includes(i) && !(noRepeat && globalDrawnHistory.includes(i))) currentPool.push(i); }
                 }
 
-                if (currentPool.length < batch) { alert(t('alertLack',{n:currentPool.length})); pInput.classList.remove('hide-placeholder'); eInput.classList.remove('hide-placeholder'); return; }
+                if (currentPool.length < batch) { alert(t('alertLack',{n:currentPool.length})); if(pInput) pInput.classList.remove('hide-placeholder'); if(eInput) eInput.classList.remove('hide-placeholder'); return; }
 
                 document.querySelectorAll('.settings-grid input, .settings-grid textarea, .star, .upload-icon-btn, .btn-import, .preset-list').forEach(i => i.style.pointerEvents = 'none');
                 
-                isRunning = true; document.getElementById('controlBtn').innerHTML = t('btnStop'); document.getElementById('controlBtn').classList.add('stop'); 
+                isRunning = true; 
+                const cBtn = document.getElementById('controlBtn');
+                if(cBtn) {
+                    cBtn.innerHTML = t('btnStop'); 
+                    cBtn.classList.add('stop'); 
+                }
                 
-                if (rollingAudio.src && rollingAudio.src !== window.location.href) {
-                    rollingAudio.currentTime = 0;
-                    rollingAudio.play().catch(e => { console.warn('Rolling SFX prevented.'); });
+                if (isMusicPlaying) {
+                    if(audioEl) audioEl.pause();
+                    if(successAudio) successAudio.pause(); 
+                    if (rollingAudio && rollingAudio.src && rollingAudio.src !== window.location.href) {
+                        rollingAudio.currentTime = 0;
+                        rollingAudio.play().catch(e => { console.warn('Rolling SFX prevented.'); });
+                    }
                 }
 
                 let spanStyle = '';
@@ -479,17 +302,23 @@
                         let safeText = String(randItem).replace(/"/g, '&quot;');
                         temp += `<span style="${spanStyle}" title="${safeText}">${safeText}</span>`;
                     }
-                    document.getElementById('numberDisplay').innerHTML = temp;
+                    const nd = document.getElementById('numberDisplay');
+                    if(nd) nd.innerHTML = temp;
                 }, 40);
 
             } else {
                 isRunning = false; clearInterval(timer); 
                 isSettling = true; 
                 document.querySelectorAll('.settings-grid input, .settings-grid textarea, .star, .upload-icon-btn, .btn-import, .preset-list').forEach(i => i.style.pointerEvents = 'auto');
-                document.getElementById('controlBtn').innerHTML = t('btnStart'); document.getElementById('controlBtn').classList.remove('stop'); 
-                pInput.classList.remove('hide-placeholder'); eInput.classList.remove('hide-placeholder');
+                const cBtn = document.getElementById('controlBtn');
+                if(cBtn) {
+                    cBtn.innerHTML = t('btnStart'); 
+                    cBtn.classList.remove('stop'); 
+                }
+                if(pInput) pInput.classList.remove('hide-placeholder'); 
+                if(eInput) eInput.classList.remove('hide-placeholder');
 
-                rollingAudio.pause();
+                if (isMusicPlaying && rollingAudio) rollingAudio.pause();
 
                 const stats = getPoolStats();
                 const activeImgBase64 = currentImageBase64;
@@ -507,7 +336,10 @@
                 maxStrW = Math.max(3, Math.min(maxStrW, 8.5));
                 let spanStyle = `width: calc(${maxStrW}ch + 50px);`;
 
-                const batchCount = parseInt(document.getElementById('batchNum').value); const note = pInput.value.trim(); const stars = currentStars;
+                const bEl = document.getElementById('batchNum');
+                const batchCount = bEl ? parseInt(bEl.value) : 1; 
+                const note = pInput ? pInput.value.trim() : ''; 
+                const stars = currentStars;
                 
                 const hashArray = new Uint8Array(16); 
                 window.crypto.getRandomValues(hashArray); 
@@ -519,10 +351,13 @@
                 globalDrawnHistory.push(...finalResults);
                 const resultStr = finalResults.join(', ');
                 
-                document.getElementById('numberDisplay').innerHTML = finalResults.map(n => {
-                    let safeText = String(n).replace(/"/g, '&quot;');
-                    return `<span style="${spanStyle}" title="${safeText}">${safeText}</span>`;
-                }).join('');
+                const nd = document.getElementById('numberDisplay');
+                if(nd) {
+                    nd.innerHTML = finalResults.map(n => {
+                        let safeText = String(n).replace(/"/g, '&quot;');
+                        return `<span style="${spanStyle}" title="${safeText}">${safeText}</span>`;
+                    }).join('');
+                }
                 
                 let usedPresetId = null;
                 if(activePresetId) {
@@ -561,15 +396,23 @@
                     const li = document.createElement('li'); li.className = 'history-item'; li.id = `hist-row-${internalId}`;
                     li.title = hashTitle;
                     li.innerHTML = `<div class="item-col-left">${displayRound}</div><div class="item-col-middle"><div class="history-numbers">${resultStr}</div>${pDisp}<div class="pool-info">${poolInfoStr}</div></div><div class="item-col-right"><span>${dTime}</span><button class="invalid-btn" id="btn-invalid-${internalId}" onclick="toggleInvalidate(${internalId}, '${resultStr.replace(/'/g,"\\'").replace(/"/g,"&quot;")}')" title="${invalidateText}">${invalidateText}</button></div>`;
-                    document.getElementById('historyList').insertBefore(li, document.getElementById('historyList').firstChild);
+                    const hList = document.getElementById('historyList');
+                    if(hList) hList.insertBefore(li, hList.firstChild);
                     
                     updateLogButtonsLanguage(); 
                 });
 
                 setTimeout(() => {
-                    if (successAudio.src && successAudio.src !== window.location.href) {
+                    if (isMusicPlaying && successAudio && successAudio.src && successAudio.src !== window.location.href) {
                         successAudio.currentTime = 0;
-                        successAudio.play().catch(e => { console.warn('Success SFX prevented.'); });
+                        successAudio.play().then(() => {
+                            successAudio.onended = () => { resumeBGMWithFade(); successAudio.onended = null; };
+                        }).catch(e => { 
+                            console.warn('Success SFX prevented or missing.'); 
+                            resumeBGMWithFade(); 
+                        });
+                    } else {
+                        resumeBGMWithFade();
                     }
 
                     let pHtml = '';
@@ -580,15 +423,21 @@
                         let textPart = (note || stars > 0) ? `<div class="modal-prize-highlight-text">${nStr}&nbsp;&nbsp;<span style="font-size:1.1em;">${sStr}</span></div>` : '';
                         pHtml = `<div class="modal-prize-box">${imgHtml}${textPart}</div>`;
                     }
-                    document.getElementById('modalPrizeInfo').innerHTML = pHtml;
+                    const mpi = document.getElementById('modalPrizeInfo');
+                    if(mpi) mpi.innerHTML = pHtml;
                     
-                    document.getElementById('modalNumber').innerHTML = finalResults.map(n => {
-                        let safeText = String(n).replace(/"/g, '&quot;');
-                        return `<span style="${spanStyle}" title="${safeText}">${safeText}</span>`;
-                    }).join('');
+                    const mn = document.getElementById('modalNumber');
+                    if(mn) {
+                        mn.innerHTML = finalResults.map(n => {
+                            let safeText = String(n).replace(/"/g, '&quot;');
+                            return `<span style="${spanStyle}" title="${safeText}">${safeText}</span>`;
+                        }).join('');
+                    }
                     
-                    document.getElementById('resultModal').style.display = 'flex'; document.activeElement.blur(); 
-                    if (stars > 0) { const sh = document.getElementById('shakeContainer'); sh.classList.add('modal-epic-shake'); setTimeout(() => sh.classList.remove('modal-epic-shake'), 700); }
+                    const rm = document.getElementById('resultModal');
+                    if(rm) { rm.style.display = 'flex'; document.activeElement.blur(); }
+                    
+                    if (stars > 0) { const sh = document.getElementById('shakeContainer'); if(sh){ sh.classList.add('modal-epic-shake'); setTimeout(() => sh.classList.remove('modal-epic-shake'), 700); } }
                     if (stars === 5) fireConfettiEngine();
                     
                     isSettling = false; 
@@ -597,15 +446,189 @@
             }
         }
 
-        function closeResultModal() { document.getElementById('resultModal').style.display = 'none'; }
-        function closePoolModal() { document.getElementById('poolModal').style.display = 'none'; }
+        // ================= 15. 审计日志、作废恢复与导出 =================
+        function resetPoolWithPrompt() {
+            if (isRunning) return;
+            if (!confirm(t('alertReset'))) return;
+
+            const exc = document.getElementById('excludeNum');
+            if(exc) exc.value = '';
+            lastExclude = '';
+
+            performSilentReset();
+            const stats = getPoolStats();
+            addSystemRecord(t('logReset', {rem: stats.remaining, tot: stats.total}));
+            saveState();
+        }
+
+        window.toggleInvalidate = function(internalId, rawNums) {
+            let logEntry = globalAuditLogs.find(l => l.internalId === internalId);
+            if (!logEntry) return;
+
+            let nums = [];
+            let numsStr = '';
+            if (Array.isArray(rawNums)) {
+                nums = isCustomPool ? rawNums.map(String) : rawNums.map(n => parseInt(n, 10));
+                numsStr = nums.join(', ');
+            } else if (typeof rawNums === 'string') {
+                nums = isCustomPool ? rawNums.split(',').map(n => n.trim()) : rawNums.split(',').map(n => parseInt(n.trim(), 10));
+                numsStr = rawNums;
+            } else if (typeof rawNums === 'number') {
+                nums = [isCustomPool ? String(rawNums) : rawNums];
+                numsStr = String(rawNums);
+            }
+
+            if (!logEntry.invalidated) {
+                if (!confirm(t('invalidateConfirm'))) return;
+                nums.forEach(n => { const idx = globalDrawnHistory.indexOf(n); if(idx > -1) globalDrawnHistory.splice(idx, 1); });
+                logEntry.invalidated = true;
+
+                if (logEntry.presetId) {
+                    let p = presets.find(x => x.id === logEntry.presetId);
+                    if (p) {
+                        p.drawn = false;
+                        if (activePresetId !== p.id) {
+                            if (activePresetId) {
+                                checkAndSaveActivePreset();
+                            } else {
+                                const pn = document.getElementById('prizeNote');
+                                const bn = document.getElementById('batchNum');
+                                prePresetState = {
+                                    note: pn ? pn.value.trim() : '',
+                                    batch: bn ? bn.value : 1,
+                                    stars: currentStars,
+                                    image: currentImageBase64
+                                };
+                            }
+                            loadPreset(p.id);
+                        } else {
+                            renderPresets();
+                        }
+                    }
+                }
+
+                const row = document.getElementById('hist-row-' + internalId); if (row) row.classList.add('invalidated');
+                const btn = document.getElementById('btn-invalid-' + internalId);
+                if (btn) { btn.innerText = currentLang === 'zh' ? '恢复' : 'Restore'; btn.classList.add('restore-btn'); btn.title = currentLang === 'zh' ? '恢复' : 'Restore'; }
+
+                updateStatsBoard(); addSystemRecord(t('logInvalidated', {n: logEntry.round.replace('Round ',''), nums: numsStr})); saveState();
+            } else {
+                if (!confirm(t('restoreConfirm'))) return;
+                globalDrawnHistory.push(...nums);
+                logEntry.invalidated = false;
+
+                if (logEntry.presetId) {
+                    let p = presets.find(x => x.id === logEntry.presetId);
+                    if (p) {
+                        p.drawn = true;
+                        if (activePresetId === p.id) {
+                            activePresetId = null;
+                            rollbackToPrePresetState();
+                        }
+                        renderPresets();
+                    }
+                }
+
+                const row = document.getElementById('hist-row-' + internalId); if (row) row.classList.remove('invalidated');
+                const btn = document.getElementById('btn-invalid-' + internalId);
+                if (btn) { btn.innerText = currentLang === 'zh' ? '作废' : 'Invalidate'; btn.classList.remove('restore-btn'); btn.title = currentLang === 'zh' ? '作废' : 'Invalidate'; }
+
+                updateStatsBoard(); addSystemRecord(t('logRestored', {n: logEntry.round.replace('Round ',''), nums: numsStr})); saveState();
+            }
+        };
+
+        window.cancelExclusion = function(internalId, itemStr) {
+            if (isRunning) return;
+            let logEntry = globalAuditLogs.find(l => l.internalId === internalId);
+            if (!logEntry || logEntry.invalidated) return;
+
+            if (isCustomPool) {
+                const idx = customPoolExcluded.indexOf(String(itemStr));
+                if (idx > -1) customPoolExcluded.splice(idx, 1);
+            }
+
+            logEntry.invalidated = true;
+
+            const row = document.getElementById('hist-row-' + internalId);
+            if (row) row.classList.add('invalidated');
+
+            const btn = document.getElementById('btn-cancel-' + internalId);
+            if (btn) btn.style.display = 'none';
+
+            updateStatsBoard();
+            saveState();
+        };
+
+        window.removeCandidateFromPreview = function(item) {
+            if (isCustomPool) {
+                if (!customPoolExcluded.includes(String(item))) {
+                    customPoolExcluded.push(String(item));
+                    updateStatsBoard();
+                    const stats = getPoolStats();
+                    const internalId = Date.now() + Math.floor(Math.random() * 10000);
+                    const timeStr = updateClock();
+                    const msg = currentLang === 'zh' ?
+                        `[透视管理] 从号池手动剔除: ${item}` :
+                        `[Preview] Excluded manually: ${item}`;
+
+                    globalAuditLogs.push({ internalId: internalId, time: timeStr, type: 'Conf', round: '-', content: msg, prize: '-', stars: '-', poolInfo: `${stats.remaining}/${stats.total}`, image: null, invalidated: false, excludedItem: String(item) });
+
+                    const cancelText = currentLang === 'zh' ? '取消' : 'Cancel';
+                    const li = document.createElement('li');
+                    li.className = 'history-item';
+                    li.id = `hist-row-${internalId}`;
+                    li.style.cssText = "background:var(--conf-log-bg); border-radius:8px; padding:10px 5px; margin-top:5px;";
+                    li.innerHTML = `
+                        <div class="item-col-left" style="color:#38a169;font-size:14px;padding-left:10px;">[${t('conf')}]</div>
+                        <div class="item-col-middle" style="align-items:flex-end; min-width:0;">
+                            <div class="exclude-log-text" style="color:#2f855a;font-size:14px;text-align:right; word-break: break-all; white-space: normal; line-height: 1.5;">${msg}</div>
+                            <div class="pool-info">(余量: ${stats.remaining})</div>
+                        </div>
+                        <div class="item-col-right" style="padding-right:10px;">
+                            <span>${timeStr.replace(' ','<br>')}</span>
+                            <button class="invalid-btn" id="btn-cancel-${internalId}" onclick="cancelExclusion(${internalId}, '${String(item).replace(/'/g, "\\'")}')" title="${cancelText}">${cancelText}</button>
+                        </div>`;
+
+                    const hList = document.getElementById('historyList');
+                    if(hList) hList.insertBefore(li, hList.firstChild);
+
+                    saveState();
+                    const nd = document.getElementById('numberDisplay');
+                    if(nd) nd.dispatchEvent(new Event('dblclick'));
+                }
+            } else {
+                const excludeEl = document.getElementById('excludeNum');
+                let currentExcludes = excludeEl ? excludeEl.value.split(/[,，]/).map(s => s.trim()).filter(s => s !== '') : [];
+
+                if(!currentExcludes.includes(String(item))) {
+                    currentExcludes.push(String(item));
+                    if(excludeEl) excludeEl.value = currentExcludes.join(', ');
+                    lastExclude = excludeEl ? excludeEl.value : '';
+
+                    updateStatsBoard();
+                    const stats = getPoolStats();
+
+                    addSettingRecord(currentLang === 'zh' ?
+                        `[透视管理] 从号池手动剔除: ${item} (余量: ${stats.remaining})` :
+                        `[Preview] Excluded manually: ${item} (Rem: ${stats.remaining})`);
+
+                    saveState();
+                    const nd = document.getElementById('numberDisplay');
+                    if(nd) nd.dispatchEvent(new Event('dblclick'));
+                }
+            }
+        };
+
+        function closeResultModal() { const m = document.getElementById('resultModal'); if(m) m.style.display = 'none'; }
+        function closePoolModal() { const m = document.getElementById('poolModal'); if(m) m.style.display = 'none'; }
 
         function addSystemRecord(msg) {
             const e = document.getElementById('emptyHint'); if(e) e.remove(); const timeStr = updateClock();
             globalAuditLogs.push({ internalId: null, time: timeStr, type: 'Sys', round: '-', content: msg, prize: '-', stars: '-', poolInfo: '-', image: null, invalidated: false });
             const li = document.createElement('li'); li.className = 'history-item'; li.style.cssText = "background:var(--sys-log-bg); border-radius:8px; padding:10px 5px; margin-top:5px;";
             li.innerHTML = `<div class="item-col-left" style="color:#3182ce;font-size:14px;padding-left:10px;">[${t('sys')}]</div><div class="item-col-middle" style="align-items:flex-end; min-width:0;"><div style="color:#2b6cb0;font-size:14px;text-align:right; word-break: break-all; white-space: normal; line-height: 1.5;">${msg}</div></div><div class="item-col-right" style="padding-right:10px;">${timeStr.replace(' ','<br>')}</div>`;
-            document.getElementById('historyList').insertBefore(li, document.getElementById('historyList').firstChild);
+            const hList = document.getElementById('historyList');
+            if(hList) hList.insertBefore(li, hList.firstChild);
         }
 
         function addSettingRecord(msg) {
@@ -613,7 +636,8 @@
             globalAuditLogs.push({ internalId: null, time: timeStr, type: 'Conf', round: '-', content: msg, prize: '-', stars: '-', poolInfo: '-', image: null, invalidated: false });
             const li = document.createElement('li'); li.className = 'history-item'; li.style.cssText = "background:var(--conf-log-bg); border-radius:8px; padding:10px 5px; margin-top:5px;";
             li.innerHTML = `<div class="item-col-left" style="color:#38a169;font-size:14px;padding-left:10px;">[${t('conf')}]</div><div class="item-col-middle" style="align-items:flex-end; min-width:0;"><div style="color:#2f855a;font-size:14px;text-align:right; word-break: break-all; white-space: normal; line-height: 1.5;">${msg}</div></div><div class="item-col-right" style="padding-right:10px;">${timeStr.replace(' ','<br>')}</div>`;
-            document.getElementById('historyList').insertBefore(li, document.getElementById('historyList').firstChild);
+            const hList = document.getElementById('historyList');
+            if(hList) hList.insertBefore(li, hList.firstChild);
         }
 
         function addYellowRecord(msg) {
@@ -621,10 +645,10 @@
             globalAuditLogs.push({ internalId: null, time: timeStr, type: 'Tip', round: '-', content: msg, prize: '-', stars: '-', poolInfo: '-', image: null, invalidated: false });
             const li = document.createElement('li'); li.className = 'history-item'; li.style.cssText = "background:var(--tip-log-bg); border-radius:8px; padding:10px 5px; margin-top:5px;";
             li.innerHTML = `<div class="item-col-left" style="color:#d97706;font-size:14px;padding-left:10px;">[${t('tip')}]</div><div class="item-col-middle" style="align-items:flex-end; min-width:0;"><div style="color:#b45309;font-size:14px;text-align:right; font-weight: bold; word-break: break-all; white-space: normal; line-height: 1.5;">${msg}</div></div><div class="item-col-right" style="padding-right:10px;">${timeStr.replace(' ','<br>')}</div>`;
-            document.getElementById('historyList').insertBefore(li, document.getElementById('historyList').firstChild);
+            const hList = document.getElementById('historyList');
+            if(hList) hList.insertBefore(li, hList.firstChild);
         }
 
-        // 💡 修复 5：CSV 导出彻底规避日期污染
         function exportFormattedLogs() {
             if (globalAuditLogs.length === 0) return alert("No data!");
             const now = new Date();
@@ -638,7 +662,7 @@
             globalAuditLogs.forEach(r => {
                 let safeContent = r.invalidated ? `[作废/Void] ${r.content}` : r.content;
                 let status = r.invalidated ? "Invalidated" : "Valid";
-                let safePoolInfo = `="${r.poolInfo}"`; // 强制 Excel 识别为文本，杜绝日期格式错误
+                let safePoolInfo = `="${r.poolInfo}"`; 
                 let safeHash = r.seedHash ? `"${r.seedHash}"` : "";
                 csv += `${r.time},${r.type},${r.round},"${safeContent.replace(/"/g,'""')}","${r.prize.replace(/"/g,'""')}",${r.stars},${safePoolInfo},${status},${safeHash}\n`;
             });
